@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Nuxeo Compound Documents
+Bundle-SymbolicName: org.nuxeo.compound.documents;singleton:=true
+Bundle-Vendor: Nuxeo
