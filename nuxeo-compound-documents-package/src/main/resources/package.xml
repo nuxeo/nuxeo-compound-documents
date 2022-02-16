@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package type="addon" name="nuxeo-compound-documents" version="@VERSION@">
+  <title>Nuxeo Compound Documents</title>
+  <description>Nuxeo Compound Documents allow binding several documents as parts of one complex document.</description>
+  <home-page>https://doc.nuxeo.com/</home-page>
+  <vendor>Nuxeo</vendor>
+  <target-platform>
+    <name>@DISTRIBUTION_NAME@</name>
+    <version>[@NUXEO_PLATFORM_VERSION@,)</version>
+  </target-platform>
+  <license>Apache 2.0</license>
+  <license-url>http://www.apache.org/licenses/LICENSE-2.0</license-url>
+</package>
