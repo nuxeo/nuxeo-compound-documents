@@ -3,3 +3,4 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Nuxeo Compound Documents
 Bundle-SymbolicName: org.nuxeo.compound.documents;singleton:=true
 Bundle-Vendor: Nuxeo
+Nuxeo-Component: OSGI-INF/core-types-contrib.xml
