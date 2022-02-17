@@ -1,0 +1,6 @@
+mongodb:
+  enabled: true
+elasticsearch:
+  enabled: true
+kafka:
+  enabled: true
