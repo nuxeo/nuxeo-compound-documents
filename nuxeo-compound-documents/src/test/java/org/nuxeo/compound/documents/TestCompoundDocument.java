@@ -16,65 +16,84 @@
  */
 package org.nuxeo.compound.documents;
 
-import static org.junit.Assert.assertFalse;
+import static javax.servlet.http.HttpServletResponse.SC_CREATED;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.io.marshallers.json.AbstractJsonWriterTest;
-import org.nuxeo.ecm.core.io.marshallers.json.JsonAssert;
-import org.nuxeo.ecm.core.io.marshallers.json.document.DocumentModelJsonWriter;
-import org.nuxeo.ecm.core.io.registry.context.RenderingContext;
-import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.io.marshallers.json.enrichers.SubtypesJsonEnricher;
+import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
+import org.nuxeo.ecm.restapi.test.BaseTest;
+import org.nuxeo.ecm.restapi.test.RestServerFeature;
+import org.nuxeo.jaxrs.test.CloseableClientResponse;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.TransactionalFeature;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 @RunWith(FeaturesRunner.class)
-@Features(CoreFeature.class)
+@Features(RestServerFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)
 @Deploy("org.nuxeo.ecm.platform.video:OSGI-INF/core-types-contrib.xml")
 @Deploy("org.nuxeo.ecm.platform.audio.core:OSGI-INF/core-types-contrib.xml")
-@Deploy("org.nuxeo.ecm.platform.tag:OSGI-INF/faceted-tag-service-core-types.xml")
 @Deploy("org.nuxeo.ecm.platform.picture.core:OSGI-INF/picture-schemas-contrib.xml")
-@Deploy("org.nuxeo.ecm.platform.types:OSGI-INF/subtypes-enricher-contrib.xml")
 @Deploy("org.nuxeo.compound.documents")
-public class TestCompoundDocument extends AbstractJsonWriterTest.Local<DocumentModelJsonWriter, DocumentModel> {
+public class TestCompoundDocument extends BaseTest {
 
     @Inject
     protected CoreSession session;
-    
-    public TestCompoundDocument() {
-        super(DocumentModelJsonWriter.class, DocumentModel.class);
+
+    @Inject
+    protected TransactionalFeature txFeature;
+
+    @Test
+    public void testCreateCompoundDocument() throws IOException {
+        String data = "{\"entity-type\": \"document\",\"type\": \"CompoundDocument\", \"name\": \"myCompoundDocument\"}";
+        try (CloseableClientResponse response = getResponse(RequestType.POST, "path/", data)) {
+            assertEquals(SC_CREATED, response.getStatus());
+        }
+        var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
+        try (CloseableClientResponse response = getResponse(RequestType.GET, "path/myCompoundDocument", headers)) {
+            assertCompoundResponse(response, "CompoundDocument");
+        }
     }
 
     @Test
-    public void testCompoundDocument() throws IOException {
-        DocumentModel doc = session.createDocument(session.createDocumentModel("/", "test", "CompoundDocument"));
-        assertTrue(doc.getFacets().contains("CompoundDocument"));
-        RenderingContext ctx = RenderingContext.CtxBuilder.enrichDoc("subtypes").get();
-        JsonAssert json = jsonAssert(doc, ctx);
-        json = json.has("contextParameters").isObject();
-        json.properties(1);
-        json = json.has("subtypes").isArray();
-        json.childrenContains("type", "File", "Picture", "Video", "Audio", "CompoundDocumentFolder");
+    public void testCreateCompoundDocumentFolder() throws IOException {
+        session.createDocument(session.createDocumentModel("/", "myCompoundDocument", "CompoundDocument"));
+        txFeature.nextTransaction();
+        String data = "{\"entity-type\": \"document\",\"type\": \"CompoundDocumentFolder\", \"name\": \"myCompoundDocumentFolder\"}";
+        try (CloseableClientResponse response = getResponse(RequestType.POST, "path/myCompoundDocument", data)) {
+            assertEquals(SC_CREATED, response.getStatus());
+        }
+        var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
+        try (CloseableClientResponse response = getResponse(RequestType.GET,
+                "path/myCompoundDocument/myCompoundDocumentFolder", headers)) {
+            assertCompoundResponse(response, "Folderish");
+        }
+    }
 
-        doc = session.createDocumentModel("/", "test", "CompoundDocumentFolder");
-        assertFalse(doc.getFacets().contains("CompoundDocument"));
-        assertTrue(doc.getFacets().contains("Folderish"));
-        ctx = RenderingContext.CtxBuilder.enrichDoc("subtypes").get();
-        json = jsonAssert(doc, ctx);
-        json = json.has("contextParameters").isObject();
-        json.properties(1);
-        json = json.has("subtypes").isArray();
-        json.childrenContains("type", "File", "Picture", "Video", "Audio", "CompoundDocumentFolder");
+    protected void assertCompoundResponse(CloseableClientResponse response, String expectedFacet) throws IOException {
+        assertEquals(SC_OK, response.getStatus());
+        JsonNode node = mapper.readTree(response.getEntityInputStream());
+        assertEquals(1, node.get("facets").size());
+        assertEquals(expectedFacet, node.get("facets").get(0).asText());
+        var actualSubtypes = node.get("contextParameters").get("subtypes");
+        assertEquals(5, actualSubtypes.size());
+        var allowedSubtypes = Set.of("File", "Picture", "Video", "Audio", "CompoundDocumentFolder");
+        actualSubtypes.forEach(t -> assertTrue(allowedSubtypes.contains(t.get("type").asText())));
     }
 }
