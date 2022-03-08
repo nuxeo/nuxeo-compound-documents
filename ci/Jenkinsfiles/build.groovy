@@ -337,6 +337,10 @@ pipeline {
           ----------------------------------------
           """
           sh """
+            #!/usr/bin/env bash -xe
+            # create the Git credentials
+            jx step git credentials
+            git config credential.helper store
             # Git tag
             git tag -a v${VERSION} -m "Release ${VERSION}"
             git push origin v${VERSION}
