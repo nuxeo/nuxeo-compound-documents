@@ -230,9 +230,9 @@ pipeline {
     TEST_SERVICE_DOMAIN_SUFFIX = 'svc.cluster.local'
     SLACK_CHANNEL = 'platform-notifs'
     CONNECT_PREPROD_URL = 'https://nos-preprod-connect.nuxeocloud.com/nuxeo'
-    NUXEO_PACKAGE_PATH = 'nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-*.zip'
     MAVEN_ARGS = getMavenArgs()
     VERSION = getVersion()
+    NUXEO_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     CURRENT_NAMESPACE = getCurrentNamespace()
     TEST_NAMESPACE_PREFIX = "$CURRENT_NAMESPACE-compound-documents-unit-tests-$BRANCH_NAME-$BUILD_NUMBER".toLowerCase()
     HELMFILE_COMMAND = "helmfile --file ci/helm/helmfile.yaml --helm-binary /usr/bin/helm3"
