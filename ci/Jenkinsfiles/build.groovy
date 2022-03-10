@@ -234,7 +234,7 @@ pipeline {
     VERSION = getVersion()
     NUXEO_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     CURRENT_NAMESPACE = getCurrentNamespace()
-    TEST_NAMESPACE_PREFIX = "$CURRENT_NAMESPACE-compound-documents-unit-tests-$BRANCH_NAME-$BUILD_NUMBER".toLowerCase()
+    TEST_NAMESPACE_PREFIX = "${CURRENT_NAMESPACE}-compound-documents-unit-tests-${BRANCH_NAME}-${BUILD_NUMBER}".toLowerCase()
     HELMFILE_COMMAND = "helmfile --file ci/helm/helmfile.yaml --helm-binary /usr/bin/helm3"
     HOME = '/root'
   }
