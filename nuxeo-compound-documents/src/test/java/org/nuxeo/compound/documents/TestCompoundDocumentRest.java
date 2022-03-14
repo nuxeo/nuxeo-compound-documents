@@ -14,25 +14,34 @@
  * limitations under the License.
  *
  */
-package org.nuxeo.compound.documents.rest.tests;
+package org.nuxeo.compound.documents;
 
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE;
+import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.makeTestZipBlob;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.nuxeo.ecm.core.io.marshallers.json.enrichers.SubtypesJsonEnricher;
+import org.nuxeo.ecm.automation.core.operations.services.FileManagerImport;
+import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
+import org.nuxeo.ecm.platform.types.SubtypesJsonEnricher;
 import org.nuxeo.ecm.restapi.test.BaseTest;
 import org.nuxeo.ecm.restapi.test.RestServerFeature;
 import org.nuxeo.jaxrs.test.CloseableClientResponse;
@@ -42,54 +51,90 @@ import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource.Builder;
 
 @RunWith(FeaturesRunner.class)
 @Features(RestServerFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)
+@Deploy("org.nuxeo.ecm.platform.filemanager")
 @Deploy("org.nuxeo.ecm.platform.video:OSGI-INF/core-types-contrib.xml")
 @Deploy("org.nuxeo.ecm.platform.audio.core:OSGI-INF/core-types-contrib.xml")
 @Deploy("org.nuxeo.ecm.platform.picture.core:OSGI-INF/picture-schemas-contrib.xml")
 @Deploy("org.nuxeo.compound.documents")
-public class TestCompoundDocument extends BaseTest {
+public class TestCompoundDocumentRest extends BaseTest {
 
     @Inject
     protected TransactionalFeature txFeature;
 
     @Test
     public void testCreateCompoundDocument() throws IOException {
-        String data = "{\"entity-type\": \"document\",\"type\": \"CompoundDocument\", \"name\": \"myCompoundDocument\"}";
+        String data = "{\"entity-type\": \"document\",\"type\": \"" + COMPOUND_DOCTYPE
+                + "\", \"name\": \"myCompoundDocument\"}";
         try (CloseableClientResponse response = getResponse(RequestType.POST, "path/", data)) {
             assertEquals(SC_CREATED, response.getStatus());
         }
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
         try (CloseableClientResponse response = getResponse(RequestType.GET, "path/myCompoundDocument", headers)) {
-            assertCompoundResponse(response, "CompoundDocument");
+            assertCompoundResponse(response, Set.of(COMPOUND_DOCTYPE, "Folderish"));
         }
     }
 
     @Test
     public void testCreateCompoundDocumentFolder() throws IOException {
-        session.createDocument(session.createDocumentModel("/", "myCompoundDocument", "CompoundDocument"));
+        session.createDocument(session.createDocumentModel("/", "myCompoundDocument", COMPOUND_DOCTYPE));
         txFeature.nextTransaction();
-        String data = "{\"entity-type\": \"document\",\"type\": \"CompoundDocumentFolder\", \"name\": \"myCompoundDocumentFolder\"}";
+
+        String data = "{\"entity-type\": \"document\",\"type\": \"" + COMPOUND_FOLDER_DOCTYPE
+                + "\", \"name\": \"myCompoundDocumentFolder\"}";
         try (CloseableClientResponse response = getResponse(RequestType.POST, "path/myCompoundDocument", data)) {
             assertEquals(SC_CREATED, response.getStatus());
         }
+
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
         try (CloseableClientResponse response = getResponse(RequestType.GET,
                 "path/myCompoundDocument/myCompoundDocumentFolder", headers)) {
-            assertCompoundResponse(response, "Folderish");
+            assertCompoundResponse(response, Set.of("Folderish"));
         }
     }
 
-    protected void assertCompoundResponse(CloseableClientResponse response, String expectedFacet) throws IOException {
+    protected void assertCompoundResponse(CloseableClientResponse response, Set<String> expectedFacets)
+            throws IOException {
         assertEquals(SC_OK, response.getStatus());
         JsonNode node = mapper.readTree(response.getEntityInputStream());
-        assertEquals(1, node.get("facets").size());
-        assertEquals(expectedFacet, node.get("facets").get(0).asText());
+        JsonNode facets = node.get("facets");
+        assertEquals(expectedFacets.size(), facets.size());
+        facets.forEach(f -> assertTrue(expectedFacets.contains(f.asText())));
         var actualSubtypes = node.get("contextParameters").get("subtypes");
         assertEquals(5, actualSubtypes.size());
-        var allowedSubtypes = Set.of("File", "Picture", "Video", "Audio", "CompoundDocumentFolder");
+        var allowedSubtypes = Set.of("File", "Picture", "Video", "Audio", COMPOUND_FOLDER_DOCTYPE);
         actualSubtypes.forEach(t -> assertTrue(allowedSubtypes.contains(t.get("type").asText())));
+    }
+
+    @Test
+    public void testCompoundDocumentUpload() throws IOException {
+        String batchId;
+        try (CloseableClientResponse response = getResponse(RequestType.POST, "upload")) {
+            JsonNode node = mapper.readTree(response.getEntityInputStream());
+            batchId = node.get("batchId").asText();
+        }
+        Builder builder = service.path("upload/" + batchId + "/0")
+                                 .accept(MediaType.APPLICATION_JSON)
+                                 .header("X-File-Type", "application/zip")
+                                 .header("X-File-Name", "test");
+
+        Blob blob = makeTestZipBlob();
+        try (var in = blob.getStream();
+                CloseableClientResponse response = CloseableClientResponse.of(builder.post(ClientResponse.class, in))) {
+            assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
+        }
+        String data = "{ \"context\": { \"currentDocument\": \"/\" } }";
+        try (CloseableClientResponse response = getResponse(RequestType.POST,
+                "upload/" + batchId + "/execute/" + FileManagerImport.ID, data)) {
+            assertEquals(Status.OK.getStatusCode(), response.getStatus());
+        }
+
+        txFeature.nextTransaction();
+        assertCompoundDocument(session.getDocument(new PathRef("/" + blob.getFilename())));
     }
 }
