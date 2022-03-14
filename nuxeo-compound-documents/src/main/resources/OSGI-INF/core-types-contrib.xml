@@ -5,6 +5,7 @@
     <doctype name="CompoundDocument" extends="Document">
       <schema name="dublincore" />
       <facet name="CompoundDocument" />
+      <facet name="Folderish" />
       <subtypes>
         <type>File</type>
         <type>Picture</type>
