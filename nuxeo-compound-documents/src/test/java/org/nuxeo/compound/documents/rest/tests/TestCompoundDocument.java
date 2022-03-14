@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.nuxeo.compound.documents;
+package org.nuxeo.compound.documents.rest.tests;
 
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
@@ -29,7 +29,6 @@ import javax.inject.Inject;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.io.marshallers.json.enrichers.SubtypesJsonEnricher;
 import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
@@ -52,9 +51,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Deploy("org.nuxeo.ecm.platform.picture.core:OSGI-INF/picture-schemas-contrib.xml")
 @Deploy("org.nuxeo.compound.documents")
 public class TestCompoundDocument extends BaseTest {
-
-    @Inject
-    protected CoreSession session;
 
     @Inject
     protected TransactionalFeature txFeature;
