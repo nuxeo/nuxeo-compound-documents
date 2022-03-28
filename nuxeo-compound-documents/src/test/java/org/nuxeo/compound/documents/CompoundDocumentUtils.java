@@ -18,8 +18,7 @@ package org.nuxeo.compound.documents;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +29,7 @@ import org.nuxeo.ecm.core.api.Blobs;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.PathRef;
+import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.runtime.api.Framework;
 
 /** @since 2021.0 */
@@ -39,23 +39,39 @@ public final class CompoundDocumentUtils {
         // Utility class
     }
 
-    protected static Blob makeTestZipBlob() throws IOException {
+    protected static final String COMPOUND_DOCTYPE = "CompoundDocument";
+
+    protected static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
+
+    protected static Blob getTestArchive() throws IOException {
         File[] source = new File(
                 CompoundDocumentUtils.class.getResource("/files/defaultCompound").getPath()).listFiles();
         File newZip = Framework.createTempFile("test", ".zip");
         ZipUtils.zip(source, newZip);
         Blob blob = Blobs.createBlob(newZip);
-        blob.setFilename("test");
+        blob.setFilename("test.zip");
+        return blob;
+    }
+
+    protected static Blob getBadArchive() throws IOException {
+        Blob blob = new FileBlob(Framework.createTempFile("test", ".zip"));
+        blob.setFilename("test.zip");
         return blob;
     }
 
     protected static void assertCompoundDocument(DocumentModel doc) {
+        assertCompoundDocument(doc, COMPOUND_DOCTYPE, COMPOUND_FOLDER_DOCTYPE);
+    }
+
+    protected static void assertCompoundDocument(DocumentModel doc, String expectedCompoundDocType,
+            String expectedCompoundFolderDocType) {
         CoreSession session = doc.getCoreSession();
         // assert structure
-        assertEquals(COMPOUND_DOCTYPE, doc.getType());
+        assertEquals(expectedCompoundDocType, doc.getType());
+        assertTrue(doc.hasFacet(COMPOUND_DOCTYPE));
         String parent = doc.getPathAsString();
-        assertEquals(COMPOUND_FOLDER_DOCTYPE, session.getDocument(new PathRef(parent + "/a")).getType());
-        assertEquals(COMPOUND_FOLDER_DOCTYPE, session.getDocument(new PathRef(parent + "/a/b")).getType());
+        assertEquals(expectedCompoundFolderDocType, session.getDocument(new PathRef(parent + "/a")).getType());
+        assertEquals(expectedCompoundFolderDocType, session.getDocument(new PathRef(parent + "/a/b")).getType());
 
         // assert files
         assertEquals("Note", session.getDocument(new PathRef(parent + "/a.txt")).getType());

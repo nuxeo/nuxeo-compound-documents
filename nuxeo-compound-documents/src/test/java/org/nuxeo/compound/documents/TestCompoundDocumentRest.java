@@ -20,10 +20,10 @@ import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_FOLDER_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
-import static org.nuxeo.compound.documents.CompoundDocumentUtils.makeTestZipBlob;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.getTestArchive;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,6 +33,7 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.core.operations.services.FileManagerImport;
@@ -43,9 +44,7 @@ import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.types.SubtypesJsonEnricher;
 import org.nuxeo.ecm.restapi.test.BaseTest;
-import org.nuxeo.ecm.restapi.test.RestServerFeature;
 import org.nuxeo.jaxrs.test.CloseableClientResponse;
-import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
@@ -55,13 +54,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource.Builder;
 
 @RunWith(FeaturesRunner.class)
-@Features(RestServerFeature.class)
+@Features(CompoundDocumentsFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)
-@Deploy("org.nuxeo.ecm.platform.filemanager")
-@Deploy("org.nuxeo.ecm.platform.video:OSGI-INF/core-types-contrib.xml")
-@Deploy("org.nuxeo.ecm.platform.audio.core:OSGI-INF/core-types-contrib.xml")
-@Deploy("org.nuxeo.ecm.platform.picture.core:OSGI-INF/picture-schemas-contrib.xml")
-@Deploy("org.nuxeo.compound.documents")
 public class TestCompoundDocumentRest extends BaseTest {
 
     @Inject
@@ -118,12 +112,13 @@ public class TestCompoundDocumentRest extends BaseTest {
             JsonNode node = mapper.readTree(response.getEntityInputStream());
             batchId = node.get("batchId").asText();
         }
+        Blob blob = getTestArchive();
+        var fileName = blob.getFilename();
         Builder builder = service.path("upload/" + batchId + "/0")
                                  .accept(MediaType.APPLICATION_JSON)
                                  .header("X-File-Type", "application/zip")
-                                 .header("X-File-Name", "test");
+                                 .header("X-File-Name", fileName);
 
-        Blob blob = makeTestZipBlob();
         try (var in = blob.getStream();
                 CloseableClientResponse response = CloseableClientResponse.of(builder.post(ClientResponse.class, in))) {
             assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
@@ -135,6 +130,7 @@ public class TestCompoundDocumentRest extends BaseTest {
         }
 
         txFeature.nextTransaction();
-        assertCompoundDocument(session.getDocument(new PathRef("/" + blob.getFilename())));
+        String docName = FilenameUtils.removeExtension(fileName);
+        assertCompoundDocument(session.getDocument(new PathRef("/" + docName)));
     }
 }
