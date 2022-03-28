@@ -16,15 +16,18 @@
  */
 package org.nuxeo.compound.documents;
 
+import org.nuxeo.ecm.restapi.test.RestServerFeature;
+import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
+import org.nuxeo.runtime.test.runner.RunnerFeature;
+
 /** @since 2021.0 */
-public final class CompoundDocumentConstants {
-
-    private CompoundDocumentConstants() {
-        // Utility class
-    }
-
-    public static final String COMPOUND_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentType";
-
-    public static final String COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentFolderType";
+@Features(RestServerFeature.class)
+@Deploy("org.nuxeo.ecm.platform.filemanager")
+@Deploy("org.nuxeo.ecm.platform.video:OSGI-INF/core-types-contrib.xml")
+@Deploy("org.nuxeo.ecm.platform.audio.core:OSGI-INF/core-types-contrib.xml")
+@Deploy("org.nuxeo.ecm.platform.picture.core:OSGI-INF/picture-schemas-contrib.xml")
+@Deploy("org.nuxeo.compound.documents")
+public class CompoundDocumentsFeature implements RunnerFeature {
 
 }
