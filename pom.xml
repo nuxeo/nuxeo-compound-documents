@@ -17,6 +17,7 @@
   <modules>
     <module>nuxeo-compound-documents</module>
     <module>nuxeo-compound-documents-package</module>
+    <module>nuxeo-compound-documents-web</module>
   </modules>
 
   <dependencyManagement>
@@ -31,6 +32,11 @@
         <artifactId>nuxeo-compound-documents-package</artifactId>
         <version>${project.version}</version>
         <type>zip</type>
+      </dependency>
+      <dependency>
+        <groupId>org.nuxeo.compound.documents</groupId>
+        <artifactId>nuxeo-compound-documents-web</artifactId>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
