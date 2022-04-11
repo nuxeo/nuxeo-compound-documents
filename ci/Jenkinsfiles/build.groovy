@@ -121,10 +121,9 @@ def buildUnitTestStage(env) {
   // Helmfile environment
   def environment = "${env}UnitTests"
   def kafkaHost = "${TEST_KAFKA_K8S_OBJECT}.${testNamespace}.${TEST_SERVICE_DOMAIN_SUFFIX}:${TEST_KAFKA_PORT}"
-  def containerName = isDev ? 'maven' : "maven-${env}"
   return {
     stage("Run ${env} unit tests") {
-      container("${containerName}") {
+      container(DEFAULT_CONTAINER) {
         // TODO NXP-29512: on a PR, make the build continue even if there is a test error
         // on other environments than the dev one
         // to remove when all test environments will be mandatory
@@ -217,7 +216,7 @@ void archiveKafkaLogs(namespace, logFile) {
 
 pipeline {
   agent {
-    label 'jenkins-nuxeo-platform-lts-2021'
+    label 'jenkins-nuxeo-package-lts-2021'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
