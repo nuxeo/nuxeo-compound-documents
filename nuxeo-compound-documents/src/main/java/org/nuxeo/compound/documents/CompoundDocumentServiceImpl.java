@@ -20,6 +20,7 @@ import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DO
 import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
 import static org.nuxeo.runtime.model.Descriptor.UNIQUE_DESCRIPTOR_ID;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
 import org.nuxeo.ecm.automation.OperationException;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.Blobs;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
@@ -53,31 +55,44 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     public DocumentModel createCompoundDocument(CoreSession session, String parent, Blob archive) {
         String compoundDocName = FilenameUtils.removeExtension(archive.getFilename());
         var parentDoc = session.getDocument(new PathRef(parent));
-        try (var zip = new ZipFile(archive.getFile())) {
+        try (var zip = new ZipFile(getFile(archive))) {
             List<ZipEntry> entries = zip.stream()
                                         .filter(this::isAllowedEntry)
                                         .sorted(Comparator.comparing(ZipEntry::getName))
                                         .collect(Collectors.toList());
             // Avoid giving the whole blobs
             List<String> entryNames = entries.stream().map(ZipEntry::getName).collect(Collectors.toList());
-            String compoundType = runScript(COMPOUND_DOCTYPE_DETECTION_OPERATION, parentDoc,
+            String compoundType = runScript(COMPOUND_DOCTYPE_DETECTION_OPERATION, session, parentDoc,
                     Map.of("entries", entryNames));
             DocumentModel compoundDoc = session.createDocumentModel(parent, compoundDocName, compoundType);
             compoundDoc.setPropertyValue("dc:title", compoundDocName);
             final DocumentModel finalDoc = session.createDocument(compoundDoc);
-            String compoundFolderType = runScript(COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION, finalDoc, Map.of());
-            entries.forEach(entry -> createEntry(finalDoc, zip, entry, compoundFolderType));
+            String compoundFolderType = runScript(COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION, session, finalDoc,
+                    Map.of());
+            entries.forEach(entry -> createEntry(session, finalDoc, zip, entry, compoundFolderType));
             return finalDoc;
         } catch (IOException e) {
-            var message = String.format("Failed to create CompoundDocument for archive: %s in parent: %s",
+            var message = String.format("Failed to create compound document for archive: %s in parent: %s",
                     archive.getFilename(), parent);
             throw new NuxeoException(message, e);
         }
     }
 
-    protected String runScript(String scriptId, DocumentModel doc, Map<String, ?> params) {
+    protected File getFile(Blob archive) {
+        if (archive.getFile() == null) {
+            try (var inputStream = archive.getStream()) {
+                return Blobs.createBlob(inputStream).getFile();
+            } catch (IOException e) {
+                var message = String.format("Failed to read file from archive: %s", archive.getFilename());
+                throw new NuxeoException(message, e);
+            }
+        }
+        return archive.getFile();
+    }
+
+    protected String runScript(String scriptId, CoreSession session, DocumentModel doc, Map<String, ?> params) {
         AutomationService automationService = Framework.getService(AutomationService.class);
-        try (OperationContext ctx = new OperationContext(doc.getCoreSession())) {
+        try (OperationContext ctx = new OperationContext(session)) {
             ctx.setInput(doc);
             var result = (String) automationService.run(ctx, scriptId, params);
             if (result == null) {
@@ -96,24 +111,25 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         return !ignoredFiles.ignore(path);
     }
 
-    protected void createEntry(DocumentModel compoundDoc, ZipFile zip, ZipEntry entry, String compoundFolderType) {
+    protected void createEntry(CoreSession session, DocumentModel compoundDoc, ZipFile zip, ZipEntry entry,
+            String compoundFolderType) {
         Path entryPath = new Path(entry.getName());
         Path entryParentPath = entryPath.removeLastSegments(1);
         String parentDocPath = compoundDoc.getPath().append(entryParentPath).toString();
         String entryDocName = entryPath.lastSegment();
-        var session = compoundDoc.getCoreSession();
         if (entry.isDirectory()) {
             var doc = session.createDocumentModel(parentDocPath, entryDocName, compoundFolderType);
+            compoundDoc.setPropertyValue("dc:title", entryDocName);
             session.createDocument(doc);
         } else {
             var blob = new ZipEntryBlob(zip, entry);
             blob.setFilename(entryDocName);
-            FileImporterContext ctx = FileImporterContext.builder(session, blob, parentDocPath).build();
+            var ctx = FileImporterContext.builder(session, blob, parentDocPath).build();
             try {
                 Framework.getService(FileManager.class).createOrUpdateDocument(ctx);
             } catch (NuxeoException | IOException e) {
-                String message = String.format("Failed to create entry: %s in: %s for archive: %s", entry.getName(),
-                        compoundDoc, zip.getName());
+                String message = String.format("Failed to create document for entry: %s in: %s for archive: %s",
+                        entry.getName(), compoundDoc, zip.getName());
                 if (e instanceof NuxeoException) {
                     NuxeoException ne = (NuxeoException) e;
                     ne.addInfo(message);

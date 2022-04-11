@@ -22,8 +22,10 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
 import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getBadArchive;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.getNestedTestArchives;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getTestArchive;
 
 import java.io.IOException;
@@ -76,7 +78,7 @@ public class TestCompoundDocumentImporter {
         NuxeoException e = assertThrows(NuxeoException.class, () -> fileManager.createOrUpdateDocument(context));
 
         String compoundDocName = FilenameUtils.removeExtension(blob.getFilename());
-        assertEquals(String.format("Failed to create CompoundDocument for archive: %s.zip in parent: %s",
+        assertEquals(String.format("Failed to create compound document for archive: %s.zip in parent: %s",
                 compoundDocName, context.getParentPath()), e.getMessage());
         ZipException cause = (ZipException) e.getCause();
         assertEquals("zip file is empty", cause.getMessage());
@@ -123,4 +125,18 @@ public class TestCompoundDocumentImporter {
         assertEquals("Failed to invoke operation " + COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION, cause.getMessage());
     }
 
+    @Test
+    public void testCreateNestedCompoundDocuments() throws IOException {
+        Blob blob = getNestedTestArchives();
+        FileImporterContext context = FileImporterContext.builder(session, blob, "/").build();
+
+        DocumentModel doc = fileManager.createOrUpdateDocument(context);
+
+        assertEquals("nest", doc.getName());
+        assertTrue(doc.hasFacet(COMPOUND_DOCTYPE));
+        var children = session.getChildren(doc.getRef());
+        assertEquals(1, children.size());
+        var nested = session.getDocument(children.get(0).getRef());
+        assertCompoundDocument(nested);
+    }
 }

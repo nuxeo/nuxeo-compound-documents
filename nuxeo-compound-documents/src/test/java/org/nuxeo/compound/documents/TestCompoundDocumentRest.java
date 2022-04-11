@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.core.operations.services.FileManagerImport;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
@@ -107,6 +108,18 @@ public class TestCompoundDocumentRest extends BaseTest {
 
     @Test
     public void testCompoundDocumentUpload() throws IOException {
+        testCompound("/");
+    }
+
+    @Test
+    public void testNestingCompoundDocuments() throws IOException {
+        DocumentModel doc = session.createDocumentModel("/", "test", COMPOUND_DOCTYPE);
+        doc = session.createDocument(doc);
+        txFeature.nextTransaction();
+        testCompound(doc.getPathAsString() + "/");
+    }
+
+    protected DocumentModel testCompound(String target) throws IOException {
         String batchId;
         try (CloseableClientResponse response = getResponse(RequestType.POST, "upload")) {
             JsonNode node = mapper.readTree(response.getEntityInputStream());
@@ -123,7 +136,7 @@ public class TestCompoundDocumentRest extends BaseTest {
                 CloseableClientResponse response = CloseableClientResponse.of(builder.post(ClientResponse.class, in))) {
             assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
         }
-        String data = "{ \"context\": { \"currentDocument\": \"/\" } }";
+        String data = String.format("{ \"context\": { \"currentDocument\": \"%s\" } }", target);
         try (CloseableClientResponse response = getResponse(RequestType.POST,
                 "upload/" + batchId + "/execute/" + FileManagerImport.ID, data)) {
             assertEquals(Status.OK.getStatusCode(), response.getStatus());
@@ -131,6 +144,8 @@ public class TestCompoundDocumentRest extends BaseTest {
 
         txFeature.nextTransaction();
         String docName = FilenameUtils.removeExtension(fileName);
-        assertCompoundDocument(session.getDocument(new PathRef("/" + docName)));
+        var compoundDocument = session.getDocument(new PathRef(target + docName));
+        assertCompoundDocument(compoundDocument);
+        return compoundDocument;
     }
 }
