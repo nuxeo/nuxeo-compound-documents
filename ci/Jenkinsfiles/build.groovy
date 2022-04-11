@@ -67,7 +67,7 @@ String getCurrentVersion() {
 }
 
 String getReleaseVersion() {
-  container('maven') {
+  container('ftests') {
     String nuxeoVersion = getCurrentVersion()
     String noSnapshot = nuxeoVersion.replace('-SNAPSHOT', '')
     String version = noSnapshot + '.1' // first version ever
@@ -202,8 +202,50 @@ def buildUnitTestStage(env) {
   }
 }
 
+def buildFrontendTestStage() {
+  return {
+    stage('Run frontend unit tests') {
+      container(DEFAULT_CONTAINER) {
+        script {
+          try {
+            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'PENDING')
+            sh 'cd nuxeo-compound-documents-web && npm run test'
+            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'SUCCESS')
+          } catch(err) {
+            currentBuild.result = "FAILURE"
+            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'FAILURE')
+            throw err
+          }
+        }
+      }
+    }
+  }
+}
+
+String getMavenFailArgs() {
+  return (isPullRequest() && pullRequest.labels.contains('failatend')) ? '--fail-at-end' : ' '
+}
+
+void runFunctionalTests(String baseDir) {
+  try {
+    retry(2) {
+      sh "mvn ${MAVEN_ARGS} ${MAVEN_FAIL_ARGS} -f ${baseDir}/pom.xml verify"
+    }
+    findText regexp: ".*ERROR.*", fileSet: "ftests/**/log/server.log"
+  } catch(err) {
+    echo "${baseDir} functional tests error: ${err}"
+    throw err
+  } finally {
+    try {
+      archiveArtifacts allowEmptyArchive: true, artifacts: "${baseDir}/**/target/failsafe-reports/*, ${baseDir}/**/target/**/*.log, ${baseDir}/**/target/*.png, ${baseDir}**/target/cucumber-reports/*.json, ${baseDir}/**/target/*.html, ${baseDir}/**/target/**/distribution.properties, ${baseDir}/**/target/**/configuration.properties"
+    } catch (err) {
+      echo hudson.Functions.printThrowable(err)
+    }
+  }
+}
+
 String getCurrentNamespace() {
-  container('maven') {
+  container('ftests') {
     return sh(returnStdout: true, script: "kubectl get pod ${NODE_NAME} -ojsonpath='{..namespace}'")
   }
 }
@@ -216,13 +258,15 @@ void archiveKafkaLogs(namespace, logFile) {
 
 pipeline {
   agent {
-    label 'jenkins-nuxeo-package-lts-2021'
+    // label 'jenkins-nuxeo-package-lts-2021'
+    label 'nuxeo-web-ui-ftests'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
   }
   environment {
-    DEFAULT_CONTAINER = 'maven'
+    // DEFAULT_CONTAINER = 'maven'
+    DEFAULT_CONTAINER = 'ftests'
     TEST_KAFKA_K8S_OBJECT = 'kafka'
     TEST_KAFKA_PORT = '9092'
     TEST_KAFKA_POD_NAME = "${TEST_KAFKA_K8S_OBJECT}-0"
@@ -230,6 +274,7 @@ pipeline {
     SLACK_CHANNEL = 'platform-notifs'
     CONNECT_PREPROD_URL = 'https://nos-preprod-connect.nuxeocloud.com/nuxeo'
     MAVEN_ARGS = getMavenArgs()
+    MAVEN_FAIL_ARGS = getMavenFailArgs()
     VERSION = getVersion()
     NUXEO_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     CURRENT_NAMESPACE = getCurrentNamespace()
@@ -272,7 +317,7 @@ pipeline {
         }
       }
       steps {
-        container('maven') {
+        container('ftests') {
           echo """
           ----------------------------------------
           Git commit
@@ -306,6 +351,24 @@ pipeline {
         }
       }
     }
+    stage('Linting') {
+      steps {
+        container(DEFAULT_CONTAINER) {
+          script {
+            setGitHubBuildStatus('npm/lint', 'Lint', 'PENDING')
+            sh 'cd nuxeo-compound-documents-web && npm run lint'
+          }
+        }
+      }
+      post {
+        success {
+          setGitHubBuildStatus('npm/lint', 'Lint', 'SUCCESS')
+        }
+        unsuccessful {
+          setGitHubBuildStatus('npm/lint', 'Lint', 'FAILURE')
+        }
+      }
+    }
     stage('Run unit tests') {
       steps {
         script {
@@ -313,7 +376,37 @@ pipeline {
           for (env in testEnvironments) {
             stages["Run ${env} unit tests"] = buildUnitTestStage(env);
           }
+          stages["Run frontend unit tests"] = buildFrontendTestStage();
           parallel stages
+        }
+      }
+    }
+    stage('Run functional tests') {
+      steps {
+        setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'PENDING')
+        container(DEFAULT_CONTAINER) {
+          script {
+            try {
+              echo """
+              ----------------------------------------
+              Run Webdriver functional tests
+              ----------------------------------------"""
+              withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
+                sh(
+                  script: '''#!/bin/bash +x
+                    echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
+                  '''
+                )
+                withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
+                  runFunctionalTests('nuxeo-compound-documents-web/ftest')
+                  setGitHubBuildStatus('ftests/dev', 'Functional tests - dev environment', 'SUCCESS')
+                }
+              }
+            } catch(err) {
+              setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'FAILURE')
+              throw err
+            }
+          }
         }
       }
     }
@@ -329,7 +422,7 @@ pipeline {
         }
       }
       steps {
-        container('maven') {
+        container('ftests') {
           echo """
           ----------------------------------------
           Git tag and push
@@ -360,7 +453,7 @@ pipeline {
       }
       steps {
         setGitHubBuildStatus('maven/deploy', 'Deploy Maven artifacts', 'PENDING')
-        container('maven') {
+        container('ftests') {
           echo """
           ----------------------------------------
           Deploy Maven artifacts
@@ -390,7 +483,7 @@ pipeline {
       }
       steps {
         setGitHubBuildStatus('package/deploy', 'Deploy Nuxeo Package', 'PENDING')
-        container('maven') {
+        container('ftests') {
           echo """
           ----------------------------------------
           Upload Nuxeo Package to ${CONNECT_PREPROD_URL}

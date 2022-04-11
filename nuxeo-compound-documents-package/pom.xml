@@ -18,6 +18,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.nuxeo.compound.documents</groupId>
+      <artifactId>nuxeo-compound-documents-web</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.nuxeo.ecm.distribution</groupId>
       <artifactId>nuxeo-nxr-server</artifactId>
       <type>zip</type>

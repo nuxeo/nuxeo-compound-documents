@@ -36,7 +36,11 @@ limitations under the License.
     </exec>
   </target>
 
-  <target name="build" depends="install" unless="skipBuild">
+  <target name="lint" description="Lint project files" depends="install">
+    <npm-run script="${lint.script}" />
+  </target>
+
+  <target name="build" depends="install,lint" unless="skipBuild">
     <npm-run script="build" />
   </target>
 
