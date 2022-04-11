@@ -44,12 +44,21 @@ public final class CompoundDocumentUtils {
     protected static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
 
     protected static Blob getTestArchive() throws IOException {
-        File[] source = new File(
+        File[] sources = new File(
                 CompoundDocumentUtils.class.getResource("/files/defaultCompound").getPath()).listFiles();
+        return getArchive("test.zip", sources);
+    }
+
+    protected static Blob getNestedTestArchives() throws IOException {
+        File source = getTestArchive().getFile();
+        return getArchive("nest.zip", source);
+    }
+
+    protected static Blob getArchive(String filename, File... sources) throws IOException {
         File newZip = Framework.createTempFile("test", ".zip");
-        ZipUtils.zip(source, newZip);
-        Blob blob = Blobs.createBlob(newZip);
-        blob.setFilename("test.zip");
+        ZipUtils.zip(sources, newZip);
+        var blob = Blobs.createBlob(newZip);
+        blob.setFilename(filename);
         return blob;
     }
 
