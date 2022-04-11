@@ -20,6 +20,15 @@
     <module>nuxeo-compound-documents-web</module>
   </modules>
 
+  <profiles>
+    <profile>
+      <id>ftest</id>
+      <modules>
+        <module>nuxeo-compound-documents-web/ftest</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
