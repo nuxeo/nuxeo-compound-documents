@@ -14,3 +14,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
+<nuxeo-slot-content name="replaceBlobAction" slot="BLOB_ACTIONS" order="35" disabled>
+  <template>
+    <nuxeo-replace-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-replace-blob-button>
+  </template>
+</nuxeo-slot-content>
+
+<nuxeo-slot-content name="deleteBlobAction" slot="BLOB_ACTIONS" order="40" disabled>
+  <template>
+    <nuxeo-delete-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-delete-blob-button>
+  </template>
+</nuxeo-slot-content>
