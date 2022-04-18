@@ -14,14 +14,36 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<nuxeo-slot-content name="replaceBlobAction" slot="BLOB_ACTIONS" order="35" disabled>
+<!-- Disable blob buttons -->
+<nuxeo-slot-content name="replaceBlobAction" slot="BLOB_ACTIONS" disabled></nuxeo-slot-content>
+
+<nuxeo-slot-content name="deleteBlobAction" slot="BLOB_ACTIONS" disabled></nuxeo-slot-content>
+
+<!--  Display document page for CompoundDocument facet -->
+<nuxeo-slot-content name="documentViewPage" slot="DOCUMENT_VIEWS_PAGES" order="10">
   <template>
-    <nuxeo-replace-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-replace-blob-button>
+    <nuxeo-filter
+      document="[[document]]"
+      expression="(document.facets.indexOf('Folderish') === -1 && document.facets.indexOf('Collection') === -1) || document.facets.indexOf('CompoundDocument') >= 0"
+    >
+      <template>
+        <nuxeo-document-page name="view" document="[[document]]" opened></nuxeo-document-page>
+      </template>
+    </nuxeo-filter>
   </template>
 </nuxeo-slot-content>
 
-<nuxeo-slot-content name="deleteBlobAction" slot="BLOB_ACTIONS" order="40" disabled>
+<!-- Prevent collapsible document page from being displayed in documents with the CompoundDocument facet -->
+<nuxeo-slot-content name="documentCollapsiblePage" slot="DOCUMENT_VIEWS_PAGES" order="10">
   <template>
-    <nuxeo-delete-blob-button document="[[document]]" xpath="[[xpath]]"></nuxeo-delete-blob-button>
+    <nuxeo-filter
+      document="[[document]]"
+      facet="Folderish,Collection"
+      expression="document.facets.indexOf('CompoundDocument') === -1"
+    >
+      <template>
+        <nuxeo-collapsible-document-page name="view" document="[[document]]"></nuxeo-collapsible-document-page>
+      </template>
+    </nuxeo-filter>
   </template>
 </nuxeo-slot-content>
