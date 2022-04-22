@@ -317,7 +317,7 @@ pipeline {
         }
       }
       steps {
-        container('ftests') {
+        container(DEFAULT_CONTAINER) {
           echo """
           ----------------------------------------
           Git commit
@@ -423,7 +423,7 @@ pipeline {
         }
       }
       steps {
-        container('ftests') {
+        container(DEFAULT_CONTAINER) {
           echo """
           ----------------------------------------
           Git tag and push
@@ -454,7 +454,7 @@ pipeline {
       }
       steps {
         setGitHubBuildStatus('maven/deploy', 'Deploy Maven artifacts', 'PENDING')
-        container('ftests') {
+        container(DEFAULT_CONTAINER) {
           echo """
           ----------------------------------------
           Deploy Maven artifacts
@@ -484,7 +484,7 @@ pipeline {
       }
       steps {
         setGitHubBuildStatus('package/deploy', 'Deploy Nuxeo Package', 'PENDING')
-        container('ftests') {
+        container(DEFAULT_CONTAINER) {
           echo """
           ----------------------------------------
           Upload Nuxeo Package to ${CONNECT_PREPROD_URL}
