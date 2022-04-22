@@ -202,7 +202,7 @@ def buildUnitTestStage(env) {
   }
 }
 
-def buildFrontendTestStage() {
+def buildFrontendUnitTestStage() {
   return {
     stage('Run frontend unit tests') {
       container(DEFAULT_CONTAINER) {
@@ -376,7 +376,8 @@ pipeline {
           for (env in testEnvironments) {
             stages["Run ${env} unit tests"] = buildUnitTestStage(env);
           }
-          stages["Run frontend unit tests"] = buildFrontendTestStage();
+          // XXX - unit tests disabled in the CI to prevent breaking the build until we have tests to run
+          // stages["Run frontend unit tests"] = buildFrontendUnitTestStage();
           parallel stages
         }
       }
