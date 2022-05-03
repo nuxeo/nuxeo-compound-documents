@@ -32,6 +32,7 @@ testEnvironments = [
   'dev',
   'mongodb',
 ]
+DEFAULT_CONTAINER = 'ftests'
 
 void setLabels() {
   echo '''
@@ -67,7 +68,7 @@ String getCurrentVersion() {
 }
 
 String getReleaseVersion() {
-  container('ftests') {
+  container(DEFAULT_CONTAINER) {
     String nuxeoVersion = getCurrentVersion()
     String noSnapshot = nuxeoVersion.replace('-SNAPSHOT', '')
     String version = noSnapshot + '.1' // first version ever
@@ -209,10 +210,11 @@ def buildFrontendUnitTestStage() {
         script {
           try {
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'PENDING')
-            sh 'cd nuxeo-compound-documents-web && npm run test'
+            dir('nuxeo-compound-documents-web') {
+              sh 'npm run test'
+            }
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'SUCCESS')
           } catch(err) {
-            currentBuild.result = "FAILURE"
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'FAILURE')
             throw err
           }
@@ -245,7 +247,7 @@ void runFunctionalTests(String baseDir) {
 }
 
 String getCurrentNamespace() {
-  container('ftests') {
+  container(DEFAULT_CONTAINER) {
     return sh(returnStdout: true, script: "kubectl get pod ${NODE_NAME} -ojsonpath='{..namespace}'")
   }
 }
@@ -258,15 +260,12 @@ void archiveKafkaLogs(namespace, logFile) {
 
 pipeline {
   agent {
-    // label 'jenkins-nuxeo-package-lts-2021'
     label 'nuxeo-web-ui-ftests'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
   }
   environment {
-    // DEFAULT_CONTAINER = 'maven'
-    DEFAULT_CONTAINER = 'ftests'
     TEST_KAFKA_K8S_OBJECT = 'kafka'
     TEST_KAFKA_PORT = '9092'
     TEST_KAFKA_POD_NAME = "${TEST_KAFKA_K8S_OBJECT}-0"
@@ -354,9 +353,9 @@ pipeline {
     stage('Linting') {
       steps {
         container(DEFAULT_CONTAINER) {
-          script {
-            setGitHubBuildStatus('npm/lint', 'Lint', 'PENDING')
-            sh 'cd nuxeo-compound-documents-web && npm run lint'
+          setGitHubBuildStatus('npm/lint', 'Lint', 'PENDING')
+          dir ('nuxeo-compound-documents-web') {
+            sh 'npm run lint'
           }
         }
       }
