@@ -21,11 +21,6 @@ limitations under the License.
     <os family="windows"/>
   </condition>
 
-  <!-- set npm script names based on OS family -->
-  <condition property="lint.script" value="win-lint" else="lint">
-    <os family="windows"/>
-  </condition>
-
   <target name="clean" description="Clean npm dependencies">
     <delete dir="node_modules" />
   </target>
@@ -36,11 +31,7 @@ limitations under the License.
     </exec>
   </target>
 
-  <target name="lint" description="Lint project files" depends="install">
-    <npm-run script="${lint.script}" />
-  </target>
-
-  <target name="build" depends="install,lint" unless="skipBuild">
+  <target name="build" depends="install" unless="skipBuild">
     <npm-run script="build" />
   </target>
 
