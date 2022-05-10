@@ -31,6 +31,9 @@
   "dependencies": {
     "@nuxeo/nuxeo-elements": "^3.0.11",
     "@nuxeo/nuxeo-ui-elements": "^3.0.11",
+    "@polymer/iron-flex-layout": "^3.0.1",
+    "@polymer/iron-icon": "^3.0.1",
+    "@polymer/paper-spinner": "^3.0.2",
     "@polymer/polymer": "^3.4.1"
   },
   "husky": {

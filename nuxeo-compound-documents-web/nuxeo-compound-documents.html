@@ -47,3 +47,15 @@ limitations under the License.
     </nuxeo-filter>
   </template>
 </nuxeo-slot-content>
+
+<!-- Override the nuxeo-document-tree with the custom compound document aware one -->
+<nuxeo-slot-content name="browseDrawerPage" slot="DRAWER_PAGES">
+  <template>
+    <nuxeo-compound-document-tree
+      name="browser"
+      id="navTree"
+      label="app.browse"
+      current-document="[[document]]"
+    ></nuxeo-compound-document-tree>
+  </template>
+</nuxeo-slot-content>
