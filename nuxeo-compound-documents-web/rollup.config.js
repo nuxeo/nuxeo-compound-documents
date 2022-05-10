@@ -10,8 +10,10 @@ const GLOBALS = {
   '@polymer/polymer/lib/legacy/class.js': 'const { mixinBehaviors } = Polymer; export { mixinBehaviors };',
   '@polymer/polymer/lib/legacy/polymer.dom.js':
     'const { dom, html, matchesSelector } = Polymer; export { dom, html, matchesSelector };',
+  '@polymer/polymer/lib/legacy/polymer-fn.js': 'const { Polymer } = window; export { Polymer };',
   '@polymer/polymer/polymer-element.js': 'const { PolymerElement } = window; export { PolymerElement };',
   '@polymer/polymer/lib/elements/dom-module.js': 'const { DomModule } = window; export { DomModule };',
+  '@polymer/polymer/lib/utils/async.js': 'const { timeOut } = Polymer.Async; export { timeOut };',
   '@polymer/polymer/lib/utils/html-tag.js': 'const { html } = Polymer; export { html };',
   '@polymer/polymer/lib/utils/debounce.js':
     'const { enqueueDebouncer, flushDebouncers, Debouncer } = Polymer; ' +
