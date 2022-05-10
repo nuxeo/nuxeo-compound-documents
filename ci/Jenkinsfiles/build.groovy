@@ -379,7 +379,7 @@ pipeline {
             stages["Run ${env} unit tests"] = buildUnitTestStage(env);
           }
           // XXX - unit tests disabled in the CI to prevent breaking the build until we have tests to run
-          // stages["Run frontend unit tests"] = buildFrontendUnitTestStage();
+          stages["Run frontend unit tests"] = buildFrontendUnitTestStage();
           parallel stages
         }
       }
