@@ -21,6 +21,7 @@ import {
   isElementVisible,
   login,
   tap,
+  timePasses,
   waitForAttrMutation,
   waitForChildListMutation,
 } from '@nuxeo/testing-helpers';
@@ -46,13 +47,13 @@ window.nuxeo.I18n.en['browse.root'] = 'Root';
 const jsonHeader = { 'Content-Type': 'application/json' };
 
 // generate a document for the tree
-const generateDocument = ({ type, parentRef, parentPath, isFolderish }) => {
+const generateDocument = ({ type, parentRef, parentPath, isFolderish, isCompound, hasThumbnail }) => {
   const uid = uidCounter;
   uidCounter += 1;
   const doc = {
     'entity-type': 'document',
     repository: 'default',
-    uid,
+    uid: `${uid}`,
     path: type === 'Root' ? '/' : `/${parentPath}/${type}${uid}`,
     type,
     parentRef,
@@ -71,10 +72,19 @@ const generateDocument = ({ type, parentRef, parentPath, isFolderish }) => {
     ],
     contextParameters: {
       hasFolderishChild: isFolderish,
+      hasContent: isCompound,
     },
   };
   if (isFolderish) {
     doc.facets.push('Folderish');
+  }
+  if (isCompound) {
+    doc.facets.push('CompoundDocument');
+  }
+  if (hasThumbnail) {
+    doc.contextParameters.thumbnail = {
+      url: '/test/images/icon.png',
+    };
   }
   return doc;
 };
@@ -144,7 +154,7 @@ const getDocumentByPath = (path) => {
   return document;
 };
 
-suite('nuxeo-compound-document-tree.', () => {
+suite('Test suite from nuxeo-document-tree', () => {
   let server;
   let documentTree;
 
@@ -313,7 +323,7 @@ suite('nuxeo-compound-document-tree.', () => {
       // assert that we have one parent only and it is visible
       expect(documentTree.parents).to.be.not.empty;
       expect(documentTree.parents).to.have.length(1);
-      expect(documentTree.parents[0].uid).to.be.equal(4);
+      expect(documentTree.parents[0].uid).to.be.equal('4');
       isElementVisible(documentTree.shadowRoot.querySelector('.parents'));
     });
 
@@ -363,7 +373,7 @@ suite('nuxeo-compound-document-tree.', () => {
       // assert that we have one parent only and it is visible
       expect(documentTree.parents).to.be.not.empty;
       expect(documentTree.parents).to.have.length(1);
-      expect(documentTree.parents[0].uid).to.be.equal(4);
+      expect(documentTree.parents[0].uid).to.be.equal('4');
       isElementVisible(documentTree.shadowRoot.querySelector('.parents'));
     });
   });
@@ -449,6 +459,361 @@ suite('nuxeo-compound-document-tree.', () => {
       const node = Array.from(nodes).find((n) => n.data.title === title);
       expect(node).to.be.not.null;
       expect(node.querySelector('.node-name').textContent.trim()).to.be.equal(title);
+    });
+  });
+});
+
+suite('Test suite for nuxeo-compound-document-tree', () => {
+  let server;
+  let documentTree;
+
+  function setupDocuments() {
+    uidCounter = 0;
+    // set up test documents
+    rootDocument = generateDocument({ type: 'Root', parentRef: '', parentPath: '', isFolderish: true }); // #id=0
+
+    // document definition for: root -> compound
+    levelOneDocuments = [
+      generateDocument({
+        type: 'CompoundDocument',
+        parentRef: '',
+        parentPath: '',
+        isFolderish: true,
+        isCompound: true,
+      }), // #id=1
+    ];
+
+    // document definition for: root -> compound -> documents
+    levelTwoDocuments = [
+      generateDocument({ type: 'Picture', parentRef: '1', parentPath: '/CompoundDocument1', hasThumbnail: true }), // #id=2
+      generateDocument({
+        type: 'CompoundDocumentFolder',
+        parentRef: '1',
+        parentPath: '/CompoundDocument1',
+        isFolderish: true,
+        isCompound: true,
+      }), // #id=3
+      generateDocument({
+        type: 'CompoundDocumentFolder',
+        parentRef: '1',
+        parentPath: '/CompoundDocument1',
+        isFolderish: true,
+        isCompound: true,
+      }), // #id=4
+    ];
+
+    levelThreeDocuments = [
+      generateDocument({
+        type: 'Picture',
+        parentRef: '3',
+        parentPath: '/CompoundDocument1/CompoundDocumentFolder3',
+        isFolderish: false,
+        isCompound: false,
+        hasThumbnail: true,
+      }), // #id=5
+      generateDocument({
+        type: 'Picture',
+        parentRef: '3',
+        parentPath: '/CompoundDocument1/CompoundDocumentFolder3',
+        isFolderish: false,
+        isCompound: false,
+        hasThumbnail: true,
+      }), // #id=6
+    ];
+
+    // eslint-disable-next-line prefer-destructuring
+    levelTwoDocument = levelTwoDocuments[0];
+    levelTwoDocument.contextParameters.breadcrumb = {
+      'entity-type': 'documents',
+      entries: [
+        // compoundDoc,
+        levelOneDocuments[0],
+        JSON.parse(JSON.stringify(levelTwoDocument)),
+      ],
+    };
+
+    levelTwoDocuments[1].contextParameters.breadcrumb = {
+      'entity-type': 'documents',
+      entries: [levelOneDocuments[0], JSON.parse(JSON.stringify(levelTwoDocuments[1]))],
+    };
+  }
+
+  function setupServerResponses() {
+    server.respondWith('GET', '/api/v1/path/', [200, jsonHeader, JSON.stringify(rootDocument)]);
+    server.respondWith('GET', '/api/v1/path/CompoundDocument1', [
+      200,
+      jsonHeader,
+      JSON.stringify(levelOneDocuments[0]),
+    ]);
+    server.respondWith('GET', '/api/v1/path/CompoundDocument1/CompoundDocumentFolder3', [
+      200,
+      jsonHeader,
+      JSON.stringify(levelTwoDocuments[1]),
+    ]);
+    server.respondWith('GET', '/api/v1/path/CompoundDocument1/Picture2.jpg', [
+      200,
+      jsonHeader,
+      JSON.stringify(levelTwoDocuments[0]),
+    ]);
+    server.respondWith('GET', '/api/v1/path/CompoundDocument1/CompoundDocumentFolder3', [
+      200,
+      jsonHeader,
+      JSON.stringify(levelTwoDocuments[1]),
+    ]);
+    server.respondWith('GET', '/api/v1/search/pp/tree_children/execute?currentPageIndex=0&pageSize=-1&queryParams=0', [
+      200,
+      jsonHeader,
+      JSON.stringify(generatePageProviderResponse(levelOneDocuments)),
+    ]);
+    server.respondWith(
+      'GET',
+      '/api/v1/search/pp/tree_children/execute?currentPageIndex=0&offset=0&pageSize=40&queryParams=0',
+      [200, jsonHeader, JSON.stringify(generatePageProviderResponse(levelOneDocuments))],
+    );
+    server.respondWith(
+      'GET',
+      '/api/v1/search/pp/tree_children/execute?currentPageIndex=0&offset=0&pageSize=40&queryParams=2',
+      [200, jsonHeader, JSON.stringify(generatePageProviderResponse([]))],
+    );
+    server.respondWith(
+      'GET',
+      '/api/v1/search/pp/advanced_document_content/execute?currentPageIndex=0&offset=0&pageSize=40&ecm_parentId=1&ecm_trashed=false',
+      [200, jsonHeader, JSON.stringify(generatePageProviderResponse(levelTwoDocuments))],
+    );
+    server.respondWith(
+      'GET',
+      '/api/v1/search/pp/advanced_document_content/execute?currentPageIndex=0&offset=0&pageSize=40&ecm_parentId=3&ecm_trashed=false',
+      [200, jsonHeader, JSON.stringify(generatePageProviderResponse(levelThreeDocuments))],
+    );
+    server.respondWith(
+      'GET',
+      '/api/v1/search/pp/advanced_document_content/execute?currentPageIndex=0&pageSize=-1&ecm_parentId=1&ecm_trashed=false',
+      [200, jsonHeader, JSON.stringify(generatePageProviderResponse(levelTwoDocuments))],
+    );
+  }
+
+  setup(async () => {
+    server = await login();
+    setupDocuments();
+    setupServerResponses();
+
+    // create the document tree
+    documentTree = await fixture(
+      html` <nuxeo-compound-document-tree .router=${router} visible></nuxeo-compound-document-tree> `,
+      true,
+    );
+    // eslint-disable-next-line prefer-destructuring
+    documentTree.document = levelOneDocuments[0];
+    await flush();
+    // wait for the tree to finish loading
+    await waitForTreeNodeLoading(documentTree);
+  });
+
+  teardown(() => {
+    server.restore();
+  });
+
+  /**
+   * check if the provided node represents a compound document
+   * Conditions:
+   * - it needs to have the expand icon
+   * - doesn't have a thumbnail
+   * - the tree says it is a compound
+   */
+  function isCompound(node) {
+    const icon = node.querySelector('iron-icon');
+    const thumbnail = node.querySelector('img');
+    return !!icon && !thumbnail && documentTree._isCompound(node.__data.data);
+  }
+
+  /**
+   * Checks if the tree node is selected
+   */
+  function isNodeSelected(node) {
+    const item = node.querySelector('#content .item');
+    return item && item.classList.contains('selected');
+  }
+
+  /**
+   * Add a click listener to the node, to prevent the default behavior: url redirect when
+   * click a tree node / document
+   */
+  function attachClickListener(nodes) {
+    nodes.forEach((n) => {
+      const anchor = n.querySelector('.node-name a');
+      anchor.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        documentTree.currentDocument = getDocumentByPath(new URL(ev.target.href).pathname);
+      });
+    });
+  }
+
+  suite('Tree display', () => {
+    test('Check that children of compound documents are displayed', () => {
+      // check that all the nodes are displayed
+      let nodes = getTreeNodes(documentTree);
+      expect(nodes).to.have.length(4);
+      // get the root node of the compound
+      const node = getTreeNodeByUid(documentTree, 1);
+      // node should be opened
+      expect(node.opened).to.be.true;
+      // assert that the node has three children
+      nodes = node.querySelectorAll('nuxeo-tree-node');
+      expect(nodes).to.have.length(3);
+      nodes.forEach((n) => expect(isElementVisible(n)).to.be.true);
+    });
+
+    test('Check that non-compound children have thumbnails', () => {
+      // check that all the nodes are displayed
+      let nodes = getTreeNodes(documentTree);
+      expect(nodes).to.have.length(4);
+      // get the root node of the compound
+      const node = getTreeNodeByUid(documentTree, 1);
+      // node should be opened
+      expect(node.opened).to.be.true;
+      // assert that the node has three children
+      nodes = node.querySelectorAll('nuxeo-tree-node');
+      expect(nodes).to.have.length(3);
+
+      // assert the first node is a regular document and contains a thumbnail
+      const child = nodes[0];
+      expect(isCompound(child)).to.be.false;
+      let thumbnail = child.querySelector('img');
+      expect(thumbnail).to.be.not.null;
+
+      // assert there's two sub-compound documents that don't have thumbnails
+      Array.from(nodes)
+        .slice(1, 2)
+        .forEach((n) => {
+          expect(isCompound(n)).to.be.true;
+          thumbnail = n.querySelector('img');
+          expect(thumbnail).to.be.null;
+        });
+    });
+
+    test('Check that compound children are listed after non-compound', () => {
+      // check that all the nodes are displayed
+      let nodes = getTreeNodes(documentTree);
+      expect(nodes).to.have.length(4);
+      // get the root node of the compound
+      const node = getTreeNodeByUid(documentTree, 1);
+      // node should be opened
+      expect(node.opened).to.be.true;
+      // assert that the node has three children
+      nodes = node.querySelectorAll('nuxeo-tree-node');
+      expect(nodes).to.have.length(3);
+      // first is a non-compound, the other two are compound
+      const nodeOrder = Array.from(nodes).map((n) => isCompound(n));
+      expect(nodeOrder).to.be.deep.equal([false, true, true]);
+    });
+
+    test('Should update the tree when a children of a compound is removed', async () => {
+      // check that all the nodes are displayed
+      let nodes = getTreeNodes(documentTree);
+      expect(nodes).to.have.length(4);
+      // fire the event to remove the documents from the tree
+      const documentsToDelete = levelTwoDocuments.slice(0, 1);
+      window.dispatchEvent(
+        new CustomEvent('nuxeo-documents-deleted', {
+          detail: {
+            documents: documentsToDelete,
+          },
+        }),
+      );
+      await flush();
+      await waitForTreeNodeLoading(documentTree);
+
+      // assert that the nodes were correctly removed
+      nodes = getTreeNodes(documentTree);
+      expect(nodes).to.have.length(3);
+      documentsToDelete.forEach((document) => {
+        const nonExistentNode = getTreeNodeByUid(documentTree, document.uid);
+        expect(nonExistentNode).to.be.null;
+      });
+    });
+  });
+
+  suite('Interaction with the tree', () => {
+    test('Check that if I click a compound, it gets selected', async () => {
+      // update the nodes to intercept the click event and prevent url redirect
+      const nodes = getTreeNodes(documentTree);
+      expect(nodes).to.be.not.null;
+      expect(nodes).to.have.length(4);
+      attachClickListener(nodes);
+
+      // click the document to open and select it
+      const node = getTreeNodeByUid(documentTree, 3);
+      expect(node.opened).to.be.false;
+      tap(node.querySelector('a'));
+      await waitForChildListMutation(documentTree.$.tree);
+      await waitForTreeNodeLoading(documentTree);
+
+      // node = getTreeNodeByUid(documentTree, 3);
+      // XXXX - we need a proper way to wait for the node to get updated
+      // await waitForChildListMutation(node);
+      // await waitForTreeNodeLoading(documentTree, node);
+      await timePasses(1000);
+      expect(node.opened).to.be.true;
+
+      // assert the node is selected
+      expect(isNodeSelected(node)).to.be.true;
+    });
+
+    test('Check that if I click a children of the compound, it gets selected', async () => {
+      // update the nodes to intercept the click event and prevent url redirect
+      const nodes = getTreeNodes(documentTree);
+      expect(nodes).to.be.not.null;
+      expect(nodes).to.have.length(4);
+      attachClickListener(nodes);
+
+      // get the first children of the compound, that is not a compound
+      const node = getTreeNodeByUid(documentTree, 2);
+      expect(node).to.be.not.null;
+      expect(isCompound(node)).to.be.false;
+      // click the document
+      tap(node.querySelector('a'));
+      await flush();
+      await waitForChildListMutation(documentTree.$.tree);
+      await waitForTreeNodeLoading(documentTree);
+
+      await timePasses(1000);
+
+      // check that the node is selected
+      expect(isNodeSelected(node)).to.be.true;
+    });
+
+    test("Check that if I click a compound children, the tree doesn't collapse", async () => {
+      // update the nodes to intercept the click event and prevent url redirect
+      let nodes = getTreeNodes(documentTree);
+      expect(nodes).to.be.not.null;
+      expect(nodes).to.have.length(4);
+      attachClickListener(nodes);
+
+      // click the compoumd children to open and select it
+      const node = getTreeNodeByUid(documentTree, 3);
+      expect(node.opened).to.be.false;
+      tap(node.querySelector('a'));
+      await waitForChildListMutation(documentTree.$.tree);
+      await waitForTreeNodeLoading(documentTree);
+
+      // XXXX - we need a proper way to wait for the node to get updated
+      // await waitForChildListMutation(node);
+      // await waitForTreeNodeLoading(documentTree, node);
+      await timePasses(1000);
+      expect(node.opened).to.be.true;
+
+      // check that the node is selected
+      expect(isNodeSelected(node)).to.be.true;
+
+      // check that there are five children nodes and the non-compound children didn't disappear
+      nodes = getTreeNodes(documentTree);
+      expect(nodes).to.be.not.null;
+      expect(nodes).to.have.length(6);
+      [levelTwoDocument].forEach((document) => {
+        const n = getTreeNodeByUid(documentTree, document.uid);
+        expect(n).to.be.not.null;
+        expect(isElementVisible(n)).to.be.true;
+      });
     });
   });
 });
