@@ -272,6 +272,16 @@ Polymer({
       // when in select all mode we don't have a list of documents in the event detail
       this._fetchDocument();
     });
+    window.addEventListener('document-deleted', (e) => {
+      const { doc } = e.detail;
+      // check if we are deleting a compound child or any document inside the compound
+      if (this._isCompoundChild(doc) || (doc && this.document && this.document.uid !== doc.uid)) {
+        this.removeDocuments([doc]);
+        return;
+      }
+      // if for any reason we don't have a document, we should fetch the current one at least
+      this._fetchDocument();
+    });
 
     window.addEventListener('refresh-display', () => {
       this._fetchDocument();
