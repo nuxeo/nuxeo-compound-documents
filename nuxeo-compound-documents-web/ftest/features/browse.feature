@@ -1,0 +1,70 @@
+Feature: Browse to the Compound Document
+
+    I can open and browse a Compound Document
+
+  Background:
+    Given user "John" exists in group "members"
+    And I login as "John"
+    And I have a Workspace document
+    And I have permission ReadWrite for this document
+    And I browse to the document
+    When I click the Create Document button
+    And I go to the import tab
+    And I can see the import tab content
+    And I upload the samplecompound.zip on the tab content page
+    And I click the Create button to finish the import
+    Then I can see that a document of the type CompoundDocument and title samplecompound is created
+    And I see the CompoundDocument page
+    And I can see CompoundDocument metadata with the following properties:
+      | name   | value            |
+      | title  | samplecompound   |
+    And I can't see the option to add a main blob
+    And I browse to the document with path "/default-domain/my_document"
+
+  Scenario: Browse the tree to a compound document
+    When I click the "browser" button
+    Then I can see the browser tree
+    And I can see the "samplecompound" browser tree node
+    When I click "samplecompound" in the browser tree
+    Then I can see the "samplecompound" browser tree node is selected
+    And I see the CompoundDocument page
+    And I can see CompoundDocument metadata with the following properties:
+      | name  | value          |
+      | title | samplecompound |
+    And I can see the "picture1.png" browser tree node
+    And I can see the "picture2.png" browser tree node
+    And I can see the "folder" browser tree node
+
+  Scenario: Browse to a compound document
+    When I browse to the document with path "/default-domain/my_document/samplecompound"
+    And I click the "browser" button
+    Then I can see the browser tree
+    And I can see the "samplecompound" browser tree node is selected
+    And I see the CompoundDocument page
+    And I can see CompoundDocument metadata with the following properties:
+      | name  | value          |
+      | title | samplecompound |
+    Then I can see the "picture1.png" browser tree node
+    And I can see the "picture2.png" browser tree node
+    And I can see the "folder" browser tree node
+
+Scenario: Browse to a compound document folder inside a compound
+    When I browse to the document with path "/default-domain/my_document/samplecompound/folder"
+    Then I see the CompoundDocumentFolder page
+    And I can see CompoundDocumentFolder metadata with the following properties:
+      | name  | value |
+      | title |folder |
+    And I can see 1 documents
+    When I click the "browser" button
+    Then I can see the browser tree
+    And I can see the "folder" browser tree node is selected
+
+Scenario: Browse to a compound child document
+    When I browse to the document with path "/default-domain/my_document/samplecompound/picture1.png"
+    Then I see the Picture page
+    And I can see Picture metadata with the following properties:
+      | name  | value        |
+      | title | picture1.png |
+    When I click the "browser" button
+    Then I can see the browser tree
+    And I can see the "picture1.png" browser tree node is selected
