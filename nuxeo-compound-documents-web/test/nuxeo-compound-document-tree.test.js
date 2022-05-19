@@ -21,7 +21,6 @@ import {
   isElementVisible,
   login,
   tap,
-  timePasses,
   waitForAttrMutation,
   waitForChildListMutation,
 } from '@nuxeo/testing-helpers';
@@ -154,7 +153,7 @@ const getDocumentByPath = (path) => {
   return document;
 };
 
-suite('Test suite from nuxeo-document-tree', () => {
+suite.skip('Test suite from nuxeo-document-tree', () => {
   let server;
   let documentTree;
 
@@ -555,11 +554,6 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       jsonHeader,
       JSON.stringify(levelTwoDocuments[0]),
     ]);
-    server.respondWith('GET', '/api/v1/path/CompoundDocument1/CompoundDocumentFolder3', [
-      200,
-      jsonHeader,
-      JSON.stringify(levelTwoDocuments[1]),
-    ]);
     server.respondWith('GET', '/api/v1/search/pp/tree_children/execute?currentPageIndex=0&pageSize=-1&queryParams=0', [
       200,
       jsonHeader,
@@ -592,11 +586,7 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
     );
   }
 
-  setup(async () => {
-    server = await login();
-    setupDocuments();
-    setupServerResponses();
-
+  async function setupFixture() {
     // create the document tree
     documentTree = await fixture(
       html` <nuxeo-compound-document-tree .router=${router} visible></nuxeo-compound-document-tree> `,
@@ -607,6 +597,14 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
     await flush();
     // wait for the tree to finish loading
     await waitForTreeNodeLoading(documentTree);
+    const node = getTreeRoot(documentTree);
+    await waitForTreeNodeLoading(documentTree, node);
+  }
+
+  setup(async () => {
+    server = await login();
+    setupDocuments();
+    setupServerResponses();
   });
 
   teardown(() => {
@@ -649,6 +647,8 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
   }
 
   suite('Tree display', () => {
+    setup(async () => setupFixture());
+
     test('Check that children of compound documents are displayed', () => {
       // check that all the nodes are displayed
       let nodes = getTreeNodes(documentTree);
@@ -734,6 +734,8 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
   });
 
   suite('Interaction with the tree', () => {
+    setup(async () => setupFixture());
+
     test('Check that if I click a compound, it gets selected', async () => {
       // update the nodes to intercept the click event and prevent url redirect
       const nodes = getTreeNodes(documentTree);
@@ -742,20 +744,18 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       attachClickListener(nodes);
 
       // click the document to open and select it
-      const node = getTreeNodeByUid(documentTree, 3);
+      let node = getTreeNodeByUid(documentTree, 3);
       expect(node.opened).to.be.false;
       tap(node.querySelector('a'));
+      await flush();
       await waitForChildListMutation(documentTree.$.tree);
       await waitForTreeNodeLoading(documentTree);
-
-      // node = getTreeNodeByUid(documentTree, 3);
-      // XXXX - we need a proper way to wait for the node to get updated
-      // await waitForChildListMutation(node);
-      // await waitForTreeNodeLoading(documentTree, node);
-      await timePasses(1000);
       expect(node.opened).to.be.true;
 
-      // assert the node is selected
+      // check that the node is selected
+      node = getTreeNodeByUid(documentTree, 3);
+      const nodeItem = node.querySelector('.item');
+      await waitForAttrMutation(nodeItem, 'class');
       expect(isNodeSelected(node)).to.be.true;
     });
 
@@ -767,7 +767,7 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       attachClickListener(nodes);
 
       // get the first children of the compound, that is not a compound
-      const node = getTreeNodeByUid(documentTree, 2);
+      let node = getTreeNodeByUid(documentTree, 2);
       expect(node).to.be.not.null;
       expect(isCompound(node)).to.be.false;
       // click the document
@@ -776,9 +776,10 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       await waitForChildListMutation(documentTree.$.tree);
       await waitForTreeNodeLoading(documentTree);
 
-      await timePasses(1000);
-
       // check that the node is selected
+      node = getTreeNodeByUid(documentTree, 2);
+      const nodeItem = node.querySelector('.item');
+      await waitForAttrMutation(nodeItem, 'class');
       expect(isNodeSelected(node)).to.be.true;
     });
 
@@ -789,21 +790,23 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       expect(nodes).to.have.length(4);
       attachClickListener(nodes);
 
-      // click the compoumd children to open and select it
-      const node = getTreeNodeByUid(documentTree, 3);
+      // click the document to open and select it
+      let node = getTreeNodeByUid(documentTree, 3);
       expect(node.opened).to.be.false;
       tap(node.querySelector('a'));
+      await flush();
       await waitForChildListMutation(documentTree.$.tree);
       await waitForTreeNodeLoading(documentTree);
-
-      // XXXX - we need a proper way to wait for the node to get updated
-      // await waitForChildListMutation(node);
-      // await waitForTreeNodeLoading(documentTree, node);
-      await timePasses(1000);
       expect(node.opened).to.be.true;
 
       // check that the node is selected
+      node = getTreeNodeByUid(documentTree, 3);
+      const nodeItem = node.querySelector('.item');
+      await waitForAttrMutation(nodeItem, 'class');
       expect(isNodeSelected(node)).to.be.true;
+
+      await flush();
+      await waitForTreeNodeLoading(documentTree, node);
 
       // check that there are five children nodes and the non-compound children didn't disappear
       nodes = getTreeNodes(documentTree);
