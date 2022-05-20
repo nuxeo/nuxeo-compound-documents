@@ -129,11 +129,9 @@ const getTreeNodeByUid = (el, uid) => el.shadowRoot.querySelector(`nuxeo-tree-no
 const waitForTreeNodeLoading = async (tree, node = null) => {
   const rootNode = node || getTreeRoot(tree);
   const spinner = getNodeLoadingSpinner(rootNode);
-  expect(isElementVisible(rootNode)).to.be.true;
-  if (rootNode.loading) {
-    await waitForAttrMutation(spinner, 'active', null);
+  if (isElementVisible(rootNode) && rootNode.loading && !spinner.getAttribute('active')) {
+    await waitForChildListMutation(rootNode.querySelector('#children'));
   }
-  expect(rootNode.loading).to.be.false;
 };
 
 const getDocumentByPath = (path) => {
@@ -153,7 +151,7 @@ const getDocumentByPath = (path) => {
   return document;
 };
 
-suite.skip('Test suite from nuxeo-document-tree', () => {
+suite('Test suite from nuxeo-document-tree', () => {
   let server;
   let documentTree;
 
@@ -228,11 +226,7 @@ suite.skip('Test suite from nuxeo-document-tree', () => {
     server.respondWith('GET', '/api/v1/path/Folder4/Folder6', [200, jsonHeader, JSON.stringify(levelTwoDocument)]);
   }
 
-  setup(async () => {
-    server = await login();
-    setupDocuments();
-    setupServerResponses();
-
+  async function setupFixture() {
     // create the document tree
     documentTree = await fixture(
       html` <nuxeo-compound-document-tree .router=${router} visible></nuxeo-compound-document-tree> `,
@@ -242,6 +236,12 @@ suite.skip('Test suite from nuxeo-document-tree', () => {
     await flush();
     // wait for the tree to finish loading
     await waitForTreeNodeLoading(documentTree);
+  }
+
+  setup(async () => {
+    server = await login();
+    setupDocuments();
+    setupServerResponses();
   });
 
   teardown(() => {
@@ -249,9 +249,11 @@ suite.skip('Test suite from nuxeo-document-tree', () => {
   });
 
   suite('Interaction with the tree', () => {
+    setup(async () => setupFixture());
+
     test('Should expand a Folderish document with children', async () => {
       // get the node
-      const node = getTreeNodeByUid(documentTree, 4);
+      let node = getTreeNodeByUid(documentTree, 4);
       // check the node is not expanded
       expect(node.opened).to.be.false;
       // assert the node is folderish and we can open it, because the icon is visible
@@ -265,6 +267,8 @@ suite.skip('Test suite from nuxeo-document-tree', () => {
       await waitForTreeNodeLoading(documentTree, node);
 
       // assert that the node was opened and we have two new tree nodes
+      // get the node
+      node = getTreeNodeByUid(documentTree, 4);
       const nodes = node.querySelectorAll('nuxeo-tree-node');
       expect(nodes).to.have.length(2);
     });
@@ -378,6 +382,8 @@ suite.skip('Test suite from nuxeo-document-tree', () => {
   });
 
   suite('Updating the tree', () => {
+    setup(async () => setupFixture());
+
     test('Should update the tree when a document is removed', async () => {
       // fire the event to remove the documents from the tree
       const documentsToDelete = levelOneDocuments.slice(0, 2);
