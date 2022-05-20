@@ -147,9 +147,7 @@ Polymer({
       }
 
       .item.compoundChild {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
+        display: table;
         padding-left: 0.35em;
       }
 
@@ -159,6 +157,8 @@ Polymer({
 
       .item.compoundChild .node-name {
         margin-left: 8px;
+        display: table-cell;
+        vertical-align: middle;
       }
 
       .item.compound.selected .node-name,
@@ -168,6 +168,8 @@ Polymer({
 
       img {
         height: 24px;
+        display: table-cell;
+        vertical-align: middle;
       }
     </style>
 
