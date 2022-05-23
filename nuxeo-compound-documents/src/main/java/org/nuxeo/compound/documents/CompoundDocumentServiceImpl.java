@@ -119,7 +119,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         String entryDocName = entryPath.lastSegment();
         if (entry.isDirectory()) {
             var doc = session.createDocumentModel(parentDocPath, entryDocName, compoundFolderType);
-            compoundDoc.setPropertyValue("dc:title", entryDocName);
+            doc.setPropertyValue("dc:title", entryDocName);
             session.createDocument(doc);
         } else {
             var blob = new ZipEntryBlob(zip, entry);
