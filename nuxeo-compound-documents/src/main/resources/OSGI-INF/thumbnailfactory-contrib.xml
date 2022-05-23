@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.thumbnail">
+  <require>org.nuxeo.ecm.platform.thumbnail.service.thumbnailfactory</require>
+  <extension point="thumbnailFactory" target="org.nuxeo.ecm.core.api.thumbnail.ThumbnailService">
+    <thumbnailFactory facet="CompoundDocument" factoryClass="org.nuxeo.compound.documents.CompoundDocumentThumbnailFactory" name="compoundDocumentThumbnailFactory" />
+  </extension>
+</component>

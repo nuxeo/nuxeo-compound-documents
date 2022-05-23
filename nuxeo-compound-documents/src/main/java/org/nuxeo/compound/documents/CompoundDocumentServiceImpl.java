@@ -122,11 +122,13 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             doc.setPropertyValue("dc:title", entryDocName);
             session.createDocument(doc);
         } else {
+            DocumentModel doc;
             var blob = new ZipEntryBlob(zip, entry);
             blob.setFilename(entryDocName);
             var ctx = FileImporterContext.builder(session, blob, parentDocPath).build();
             try {
-                Framework.getService(FileManager.class).createOrUpdateDocument(ctx);
+                var fileManager = Framework.getService(FileManager.class);
+                doc = fileManager.createOrUpdateDocument(ctx);
             } catch (NuxeoException | IOException e) {
                 String message = String.format("Failed to create document for entry: %s in: %s for archive: %s",
                         entry.getName(), compoundDoc, zip.getName());
@@ -136,6 +138,10 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                     throw ne;
                 }
                 throw new NuxeoException(message, e);
+            }
+            if (FilenameUtils.removeExtension(entry.getName()).equals("preview")) {
+                compoundDoc.setPropertyValue("cp:preview", doc.getId());
+                session.saveDocument(compoundDoc);
             }
         }
     }

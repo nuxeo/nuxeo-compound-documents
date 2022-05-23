@@ -17,6 +17,7 @@
 package org.nuxeo.compound.documents;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -26,6 +27,7 @@ import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYP
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getBadArchive;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getNestedTestArchives;
+import static org.nuxeo.compound.documents.CompoundDocumentUtils.getPreviewTestArchive;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getTestArchive;
 
 import java.io.IOException;
@@ -41,6 +43,8 @@ import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.NuxeoException;
+import org.nuxeo.ecm.core.api.PathRef;
+import org.nuxeo.ecm.core.api.thumbnail.ThumbnailService;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.filemanager.api.FileImporterContext;
@@ -48,6 +52,7 @@ import org.nuxeo.ecm.platform.filemanager.api.FileManager;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
 @RunWith(FeaturesRunner.class)
 @Features(CompoundDocumentsFeature.class)
@@ -60,6 +65,12 @@ public class TestCompoundDocumentImporter {
     @Inject
     protected FileManager fileManager;
 
+    @Inject
+    protected ThumbnailService thumbnailService;
+
+    @Inject
+    protected TransactionalFeature txFeature;
+
     @Test
     public void testCreateCompoundDocument() throws IOException {
         Blob blob = getTestArchive();
@@ -68,6 +79,26 @@ public class TestCompoundDocumentImporter {
         DocumentModel doc = fileManager.createOrUpdateDocument(context);
 
         assertCompoundDocument(doc);
+    }
+
+    @Test
+    public void testCreateCompoundDocumentWithPreviewAsThumbnail() throws IOException {
+        Blob blob = getPreviewTestArchive();
+        FileImporterContext context = FileImporterContext.builder(session, blob, "/").build();
+
+        DocumentModel doc = fileManager.createOrUpdateDocument(context);
+        txFeature.nextTransaction();
+
+        var previewId = doc.getPropertyValue("cp:preview");
+        assertNotNull(previewId);
+        var preview = session.getDocument(new PathRef(doc.getPathAsString(), "preview.png"));
+        assertNotNull(preview);
+        assertEquals("preview.png", preview.getName());
+        assertEquals(preview.getId(), previewId);
+        var thumbnailBlob = thumbnailService.getThumbnail(doc, session);
+        assertNotNull(thumbnailBlob);
+        var previewBlob = thumbnailService.getThumbnail(preview, session);
+        assertEquals(previewBlob, thumbnailBlob);
     }
 
     @Test

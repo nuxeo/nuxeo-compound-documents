@@ -54,6 +54,12 @@ public final class CompoundDocumentUtils {
         return getArchive("nest.zip", source);
     }
 
+    protected static Blob getPreviewTestArchive() throws IOException {
+        File[] sources = new File(
+                CompoundDocumentUtils.class.getResource("/files/previewCompound").getPath()).listFiles();
+        return getArchive("testWithPreview.zip", sources);
+    }
+
     protected static Blob getArchive(String filename, File... sources) throws IOException {
         File newZip = Framework.createTempFile("test", ".zip");
         ZipUtils.zip(sources, newZip);
