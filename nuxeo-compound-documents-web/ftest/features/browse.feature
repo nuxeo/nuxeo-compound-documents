@@ -8,17 +8,8 @@ Feature: Browse to the Compound Document
     And I have a Workspace document
     And I have permission ReadWrite for this document
     And I browse to the document
-    When I click the Create Document button
-    And I go to the import tab
-    And I can see the import tab content
-    And I upload the samplecompound.zip on the tab content page
-    And I click the Create button to finish the import
-    Then I can see that a document of the type CompoundDocument and title samplecompound is created
-    And I see the CompoundDocument page
-    And I can see CompoundDocument metadata with the following properties:
-      | name   | value            |
-      | title  | samplecompound   |
-    And I can't see the option to add a main blob
+    And I have a CompoundDocument imported from file "samplecompound.zip"
+    And I have permission Read for this document
     And I browse to the document with path "/default-domain/my_document"
 
   Scenario: Browse the tree to a compound document
