@@ -35,7 +35,8 @@
     "@polymer/iron-flex-layout": "^3.0.1",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/paper-spinner": "^3.0.2",
-    "@polymer/polymer": "^3.4.1"
+    "@polymer/polymer": "^3.4.1",
+    "sinon": "^14.0.0"
   },
   "husky": {
     "hooks": {

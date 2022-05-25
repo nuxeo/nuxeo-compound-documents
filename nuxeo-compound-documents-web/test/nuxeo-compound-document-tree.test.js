@@ -19,12 +19,12 @@ import {
   flush,
   html,
   isElementVisible,
-  login,
   tap,
   waitForAttrMutation,
   waitForChildListMutation,
 } from '@nuxeo/testing-helpers';
 import { expect } from '@esm-bundle/chai';
+import sinon from 'sinon';
 import '@nuxeo/nuxeo-ui-elements/nuxeo-icons.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/hardware-icons.js';
@@ -121,7 +121,28 @@ const router = {
   document: (path) => path,
 };
 
-const getTreeRoot = (el) => el.$$('nuxeo-tree-node#root');
+const setupServer = async () => {
+  const server = sinon.fakeServer.create();
+  server.autoRespond = true;
+
+  server.respondWith('GET', '/json/cmis', [200, { 'Content-Type': 'application/json' }, '{}']);
+
+  server.respondWith('POST', '/api/v1/automation/login', [
+    200,
+    { 'Content-Type': 'application/json' },
+    '{"entity-type":"login","username":"Administrator"}',
+  ]);
+
+  server.respondWith('GET', '/api/v1/user/Administrator', [
+    200,
+    { 'Content-Type': 'application/json' },
+    '{"entity-type":"user","username":"Administrator", "isAdministrator": true}',
+  ]);
+
+  return server;
+};
+
+const getTreeRoot = (el) => el.shadowRoot.querySelector('nuxeo-tree-node#root');
 const getNodeLoadingSpinner = (el) => el.querySelector('paper-spinner');
 const getTreeNodes = (el) => el.shadowRoot.querySelectorAll('nuxeo-tree-node');
 const getTreeNodeByUid = (el, uid) => el.shadowRoot.querySelector(`nuxeo-tree-node[data-uid="${uid}"]`);
@@ -229,17 +250,23 @@ suite('Test suite from nuxeo-document-tree', () => {
   async function setupFixture() {
     // create the document tree
     documentTree = await fixture(
-      html` <nuxeo-compound-document-tree .router=${router} visible></nuxeo-compound-document-tree> `,
+      html`
+        <nuxeo-compound-document-tree
+          .document=${rootDocument}
+          .router=${router}
+          visible
+        ></nuxeo-compound-document-tree>
+      `,
       true,
     );
-    documentTree.document = rootDocument;
     await flush();
     // wait for the tree to finish loading
     await waitForTreeNodeLoading(documentTree);
   }
 
   setup(async () => {
-    server = await login();
+    server = await setupServer();
+
     setupDocuments();
     setupServerResponses();
   });
@@ -595,11 +622,15 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
   async function setupFixture() {
     // create the document tree
     documentTree = await fixture(
-      html` <nuxeo-compound-document-tree .router=${router} visible></nuxeo-compound-document-tree> `,
+      html`
+        <nuxeo-compound-document-tree
+          .document=${levelOneDocuments[0]}
+          .router=${router}
+          visible
+        ></nuxeo-compound-document-tree>
+      `,
       true,
     );
-    // eslint-disable-next-line prefer-destructuring
-    documentTree.document = levelOneDocuments[0];
     await flush();
     // wait for the tree to finish loading
     await waitForTreeNodeLoading(documentTree);
@@ -608,7 +639,8 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
   }
 
   setup(async () => {
-    server = await login();
+    server = await setupServer();
+
     setupDocuments();
     setupServerResponses();
   });

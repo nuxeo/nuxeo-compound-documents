@@ -285,9 +285,7 @@ Polymer({
       this._fetchDocument();
     });
 
-    window.addEventListener('refresh-display', () => {
-      this._fetchDocument();
-    });
+    window.addEventListener('refresh-display', this._fetchDocument.bind(this));
 
     window.addEventListener('document-created', this._fetchDocument.bind(this));
 
