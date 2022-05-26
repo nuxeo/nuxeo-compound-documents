@@ -49,8 +49,8 @@ if (isSauceLabsRun) {
     sauceLabsLauncher({
       ...sharedCapabilities,
       browserName: 'safari',
+      platformName: 'macOS 11.00',
       browserVersion: 'latest',
-      platformName: 'macOS 10.15',
     }),
     sauceLabsLauncher({
       ...sharedCapabilities,

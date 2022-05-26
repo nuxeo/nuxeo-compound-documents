@@ -211,10 +211,12 @@ def buildFrontendUnitTestStage() {
         script {
           try {
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'PENDING')
-            dir('nuxeo-compound-documents-web') {
-              sh 'npm install'
-              sh 'npm install playwright@1.18.1'
-              sh 'npm run test'
+            withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
+              dir('nuxeo-compound-documents-web') {
+                sh 'npm install'
+                sh 'npm install playwright@1.18.1'
+                sh 'npm run test'
+              }
             }
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'SUCCESS')
           } catch(err) {
