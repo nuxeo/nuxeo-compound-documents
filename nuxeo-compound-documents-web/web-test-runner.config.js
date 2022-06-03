@@ -59,7 +59,8 @@ if (isSauceLabsRun) {
       platformName: 'Windows 10',
     }),
   ];
-  baseConfig.browsers = baseConfig.browsers.concat(sauceBrowsers);
+  // Note: due to OS restrictions, we use saucelabs for CI
+  baseConfig.browsers = sauceBrowsers;
   baseConfig.browserStartTimeout = 1000 * 30 * 5;
   baseConfig.sessionStartTimeout = 1000 * 30 * 5;
   baseConfig.sessionFinishTimeout = 1000 * 30 * 5;

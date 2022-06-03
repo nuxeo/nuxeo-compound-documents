@@ -280,7 +280,7 @@ suite('Test suite from nuxeo-document-tree', () => {
 
     test('Should expand a Folderish document with children', async () => {
       // get the node
-      let node = getTreeNodeByUid(documentTree, 4);
+      const node = getTreeNodeByUid(documentTree, 4);
       // check the node is not expanded
       expect(node.opened).to.be.false;
       // assert the node is folderish and we can open it, because the icon is visible
@@ -291,11 +291,12 @@ suite('Test suite from nuxeo-document-tree', () => {
       // node should now be opened
       expect(node.opened).to.be.true;
       await flush();
+      await waitForChildListMutation(node.querySelector('#children'));
       await waitForTreeNodeLoading(documentTree, node);
 
       // assert that the node was opened and we have two new tree nodes
       // get the node
-      node = getTreeNodeByUid(documentTree, 4);
+      // node = getTreeNodeByUid(documentTree, 4);
       const nodes = node.querySelectorAll('nuxeo-tree-node');
       expect(nodes).to.have.length(2);
     });
