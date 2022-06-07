@@ -163,7 +163,7 @@ def buildUnitTestStage(env) {
               //   - loading some test framework system properties
               def testCore = env == 'mongodb' ? 'mongodb' : 'vcs'
               def kafkaOptions = isDev ? '' : "-Pkafka -Dkafka.bootstrap.servers=${kafkaHost}"
-              def mvnCommand = """                 
+              def mvnCommand = """
                 mvn ${MAVEN_ARGS} \
                   -Dcustom.environment=${env} \
                   -Dcustom.environment.log.dir=target-${env} \
@@ -236,7 +236,7 @@ void runFunctionalTests(String baseDir) {
     retry(2) {
       sh "mvn ${MAVEN_ARGS} ${MAVEN_FAIL_ARGS} -f ${baseDir}/pom.xml verify"
     }
-    findText regexp: ".*ERROR.*", fileSet: "ftests/**/log/server.log"
+    findText regexp: ".*ERROR.*", fileSet: "${baseDir}/**/log/server.log"
   } catch(err) {
     echo "${baseDir} functional tests error: ${err}"
     throw err
@@ -389,27 +389,31 @@ pipeline {
         setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'PENDING')
         container(DEFAULT_CONTAINER) {
           script {
-            try {
-              echo """
-              ----------------------------------------
-              Run Webdriver functional tests
-              ----------------------------------------"""
-              withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
-                sh(
-                  script: '''#!/bin/bash +x
-                    echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
-                  '''
-                )
-                withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
-                  runFunctionalTests('nuxeo-compound-documents-web/ftest')
-                  setGitHubBuildStatus('ftests/dev', 'Functional tests - dev environment', 'SUCCESS')
-                }
+            echo """
+            ----------------------------------------
+            Run Webdriver functional tests
+            ----------------------------------------"""
+            withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
+              sh(
+                script: '''#!/bin/bash +x
+                  echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
+                '''
+              )
+              withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
+                runFunctionalTests('nuxeo-compound-documents-web/ftest')
               }
-            } catch(err) {
-              setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'FAILURE')
-              throw err
             }
           }
+        }
+      }
+      post {
+        success {
+          setGitHubBuildStatus('ftests/dev', 'Functional tests - dev environment', 'SUCCESS')
+        }
+        unsuccessful {
+          setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'FAILURE')
+          // findText does mark the build in FAILURE but doesn't stop the pipeline, error does
+          error "Errors were found!"
         }
       }
     }
