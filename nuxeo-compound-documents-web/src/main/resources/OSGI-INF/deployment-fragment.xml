@@ -16,8 +16,9 @@
     <unzip from="${bundle.fileName}" to="${bundle.fileName}.tmp" />
 
     <!-- append the translations -->
-    <append from="${bundle.fileName}.tmp/web/nuxeo.war/ui/i18n/messages.json"
-            to="nuxeo.war/ui/i18n/messages.json" />
+    <!-- TODO: uncomment when labels are added -->
+    <!-- <append from="${bundle.fileName}.tmp/web/nuxeo.war/ui/i18n/messages.json"
+            to="nuxeo.war/ui/i18n/messages.json" /> -->
 
     <delete path="${bundle.fileName}.tmp" />
 
