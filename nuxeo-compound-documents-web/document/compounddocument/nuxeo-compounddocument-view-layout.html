@@ -29,8 +29,13 @@ limitations under the License.
     </style>
 
     <!-- fetch the preview document -->
-    <nuxeo-document id="doc" doc-id="[[document.properties.cp:preview.uid]]"></nuxeo-document>
-    <nuxeo-document-viewer id="previewer" role="widget"></nuxeo-document-viewer>
+    <nuxeo-document
+      id="doc"
+      doc-id="[[document.properties.cp:preview.uid]]"
+      response="{{previewDoc}}"
+      auto
+    ></nuxeo-document>
+    <nuxeo-document-viewer id="previewer" role="widget" document="[[previewDoc]]"></nuxeo-document-viewer>
   </template>
 
   <script>
@@ -42,15 +47,6 @@ limitations under the License.
          * @doctype CompoundDocument
          */
         document: Object,
-      },
-      observers: ['_fetchDocument(document)'],
-
-      _fetchDocument() {
-        if (this.document && this.document.properties['cp:preview']) {
-          this.$.doc.get().then((document) => {
-            this.$.previewer.document = document;
-          });
-        }
       },
     });
   </script>
