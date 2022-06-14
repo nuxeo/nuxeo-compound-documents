@@ -27,7 +27,10 @@ limitations under the License.
         @apply --paper-card;
       }
     </style>
-    <nuxeo-document-viewer role="widget" document="[[document]]"></nuxeo-document-viewer>
+
+    <!-- fetch the preview document -->
+    <nuxeo-document id="doc" doc-id="[[document.properties.cp:preview.uid]]"></nuxeo-document>
+    <nuxeo-document-viewer id="previewer" role="widget"></nuxeo-document-viewer>
   </template>
 
   <script>
@@ -39,6 +42,15 @@ limitations under the License.
          * @doctype CompoundDocument
          */
         document: Object,
+      },
+      observers: ['_fetchDocument(document)'],
+
+      _fetchDocument() {
+        if (this.document && this.document.properties['cp:preview']) {
+          this.$.doc.get().then((document) => {
+            this.$.previewer.document = document;
+          });
+        }
       },
     });
   </script>
