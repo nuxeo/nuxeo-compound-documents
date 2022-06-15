@@ -18,9 +18,10 @@ Feature: Browse to the Compound Document
     And I can see the "samplecompound" browser tree node
     When I click "samplecompound" in the browser tree
     Then I can see the "samplecompound" browser tree node is selected
-    And I can see the "picture2.png" child node at position 1
-    And I can see the "picture1.png" child node at position 2
-    And I can see the "folder" child node at position 3
+    And I can see the "preview.png" child node at position 1
+    And I can see the "picture2.png" child node at position 2
+    And I can see the "picture1.png" child node at position 3
+    And I can see the "folder" child node at position 4
 
   Scenario: Browse the tree to a compound document
     When I click the "browser" button
