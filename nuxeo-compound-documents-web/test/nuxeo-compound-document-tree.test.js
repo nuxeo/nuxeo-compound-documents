@@ -207,7 +207,7 @@ suite('Test suite from nuxeo-document-tree', () => {
     // set the breadcrumb for some documents
     levelTwoDocument.contextParameters.breadcrumb = {
       'entity-type': 'documents',
-      entries: [levelOneDocument],
+      entries: [levelOneDocument, JSON.parse(JSON.stringify(levelTwoDocument))],
     };
 
     levelThreeDocuments[0].contextParameters.breadcrumb = {
@@ -262,6 +262,8 @@ suite('Test suite from nuxeo-document-tree', () => {
     await flush();
     // wait for the tree to finish loading
     await waitForTreeNodeLoading(documentTree);
+    const node = getTreeRoot(documentTree);
+    await waitForTreeNodeLoading(documentTree, node);
   }
 
   setup(async () => {
@@ -365,11 +367,15 @@ suite('Test suite from nuxeo-document-tree', () => {
       // node should now be opened
       expect(node.opened).to.be.true;
       await flush();
+      await waitForTreeNodeLoading(documentTree);
       await waitForTreeNodeLoading(documentTree, node);
+
       node = getTreeNodeByUid(documentTree, 6);
       tap(node.querySelector('iron-icon'));
       expect(node.opened).to.be.true;
       await flush();
+      await waitForTreeNodeLoading(documentTree);
+      node = getTreeNodeByUid(documentTree, 6);
       await waitForTreeNodeLoading(documentTree, node);
 
       // add an event listener to intercept the click event and prevent url redirect
@@ -383,14 +389,17 @@ suite('Test suite from nuxeo-document-tree', () => {
           documentTree.currentDocument = getDocumentByPath(new URL(ev.target.href).pathname);
         });
       });
-      const nodeToClick = getTreeNodeByUid(documentTree, 7);
-      expect(nodeToClick).to.be.not.null;
+      node = getTreeNodeByUid(documentTree, 6);
+      expect(node).to.be.not.null;
       // click the anchor
-      tap(nodeToClick.querySelector('a'));
-
+      tap(node.querySelector('a'));
       await flush();
-      await waitForChildListMutation(documentTree.$.tree);
       await waitForTreeNodeLoading(documentTree);
+      await waitForChildListMutation(documentTree.$.tree);
+      node = getTreeNodeByUid(documentTree, 6);
+      expect(node).to.be.not.null;
+      expect(node.opened).to.be.true;
+      await waitForTreeNodeLoading(documentTree, node);
 
       // check that there are only three nodes (two children and the ancestor)
       nodes = getTreeNodes(documentTree);
@@ -405,7 +414,7 @@ suite('Test suite from nuxeo-document-tree', () => {
       expect(documentTree.parents).to.be.not.empty;
       expect(documentTree.parents).to.have.length(1);
       expect(documentTree.parents[0].uid).to.be.equal('4');
-      isElementVisible(documentTree.shadowRoot.querySelector('.parents'));
+      expect(isElementVisible(documentTree.shadowRoot.querySelector('.parents')));
     });
   });
 
@@ -845,6 +854,8 @@ suite('Test suite for nuxeo-compound-document-tree', () => {
       expect(isNodeSelected(node)).to.be.true;
 
       await flush();
+      await waitForTreeNodeLoading(documentTree);
+      node = getTreeNodeByUid(documentTree, 3);
       await waitForTreeNodeLoading(documentTree, node);
 
       // check that there are five children nodes and the non-compound children didn't disappear
