@@ -33,7 +33,6 @@ testEnvironments = [
   'mongodb',
 ]
 DEFAULT_CONTAINER = 'ftests'
-PLAYWRIGHT_CONTAINER = 'playwright'
 
 void setLabels() {
   echo '''
@@ -207,14 +206,13 @@ def buildUnitTestStage(env) {
 def buildFrontendUnitTestStage() {
   return {
     stage('Run frontend unit tests') {
-      container(PLAYWRIGHT_CONTAINER) {
+      container(DEFAULT_CONTAINER) {
         script {
           try {
             setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'PENDING')
             withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
               dir('nuxeo-compound-documents-web') {
                 sh 'npm install'
-                sh 'npm install playwright@1.18.1'
                 sh 'npm run test'
               }
             }
