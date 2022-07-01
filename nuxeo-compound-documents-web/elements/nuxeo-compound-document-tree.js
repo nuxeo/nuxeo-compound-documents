@@ -170,6 +170,7 @@ Polymer({
         height: 24px;
         display: table-cell;
         vertical-align: middle;
+        margin-inline-end: 5px;
       }
     </style>
 
