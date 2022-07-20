@@ -23,6 +23,8 @@ public final class CompoundDocumentConstants {
         // Utility class
     }
 
+    public static final String COMPOUND_DOCUMENT_FACET = "CompoundDocument";
+
     public static final String COMPOUND_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentType";
 
     public static final String COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentFolderType";
