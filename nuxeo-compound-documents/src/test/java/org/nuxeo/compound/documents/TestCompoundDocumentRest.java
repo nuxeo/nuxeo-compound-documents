@@ -54,6 +54,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource.Builder;
 
+/** @since 2021.0 */
 @RunWith(FeaturesRunner.class)
 @Features(CompoundDocumentsFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)

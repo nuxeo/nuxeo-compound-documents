@@ -54,6 +54,7 @@ import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
+/** @since 2021.0 */
 @RunWith(FeaturesRunner.class)
 @Features(CompoundDocumentsFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)
