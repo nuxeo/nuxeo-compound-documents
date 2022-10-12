@@ -91,6 +91,7 @@ Polymer({
         width: 1.3rem;
         margin-right: -1.6em;
         margin-top: -0.07rem;
+        padding-right: 5px;
       }
 
       [toggle] {
