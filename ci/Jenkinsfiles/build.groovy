@@ -29,7 +29,7 @@ Closure buildUnitTestStage(env) {
             try {
               sh """
                 cat ci/mvn/nuxeo-test-${env}.properties \
-                  ci/mvn/nuxeo-test-elasticsearch.properties \
+                  ci/mvn/nuxeo-test-opensearch.properties \
                 | envsubst > /root/nuxeo-test-${env}.properties
               """
               retry(3) {
@@ -55,7 +55,7 @@ Closure buildUnitTestStage(env) {
 
 pipeline {
   agent {
-    label 'jenkins-nuxeo-package-lts-2021'
+    label 'jenkins-nuxeo-package-lts-2023'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
