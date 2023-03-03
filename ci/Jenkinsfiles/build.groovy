@@ -15,271 +15,57 @@
 *
 * Contributors:
 *     Thomas Fowley
+*     Kevin Leturc <kevin.leturc@hyland.com>
 */
+library identifier: "platform-ci-shared-library@v0.0.19"
 
-def abortRunningBuilds() {
-  // see https://issues.jenkins.io/browse/JENKINS-43353
-  def buildNumber = BUILD_NUMBER as int
-  if (buildNumber > 1) {
-    milestone(buildNumber - 1)
-  }
-  milestone(buildNumber)
-}
-abortRunningBuilds()
-
-repositoryUrl = 'https://github.com/nuxeo/nuxeo-compound-documents'
-testEnvironments = [
-  'dev',
-  'mongodb',
-]
-DEFAULT_CONTAINER = 'ftests'
-
-void setLabels() {
-  echo '''
-    ----------------------------------------
-    Set Kubernetes resource labels
-    ----------------------------------------
-  '''
-  echo "Set label 'branch: ${BRANCH_NAME}' on pod ${NODE_NAME}"
-  sh "kubectl label pods ${NODE_NAME} branch=${BRANCH_NAME}"
-  // output pod description
-  echo "Describe pod ${NODE_NAME}"
-  sh "kubectl describe pod ${NODE_NAME}"
-}
-
-String getMavenArgs() {
-  def args = '-B -nsu -Dnuxeo.skip.enforcer=true -P-nexus,nexus-private'
-  if (!isPullRequest()) {
-    args += ' -Prelease'
-  }
-  return args
-}
-
-def isPullRequest() {
-  return "${BRANCH_NAME}" =~ /PR-.*/
-}
-
-String getPullRequestVersion() {
-  return "${BRANCH_NAME}-" + getCurrentVersion()
-}
-
-String getCurrentVersion() {
-  return readMavenPom().getVersion();
-}
-
-String getReleaseVersion() {
-  container(DEFAULT_CONTAINER) {
-    String nuxeoVersion = getCurrentVersion()
-    String noSnapshot = nuxeoVersion.replace('-SNAPSHOT', '')
-    String version = noSnapshot + '.1' // first version ever
-    // find the latest tag if any
-    sh """
-      git fetch origin 'refs/tags/v${noSnapshot}*:refs/tags/v${noSnapshot}*'
-    """
-    def tag = sh(returnStdout: true, script: "git tag --sort=taggerdate --list 'v${noSnapshot}*' | tail -1 | tr -d '\n'")
-    if (tag) {
-      version = sh(returnStdout: true, script: "semver bump patch ${tag} | tr -d '\n'")
-    }
-    return version
-  }
-}
-
-void setGitHubBuildStatus(String context, String message, String state) {
-  if (env.DRY_RUN != "true") {
-    step([
-      $class            : 'GitHubCommitStatusSetter',
-      reposSource       : [$class: 'ManuallyEnteredRepositorySource', url: repositoryUrl],
-      contextSource     : [$class: 'ManuallyEnteredCommitContextSource', context: context],
-      statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: message, state: state]]],
-    ])
-  }
-}
-
-String getVersion() {
-  return isPullRequest() ? getPullRequestVersion() : getReleaseVersion()
-}
-
-void helmfileSync(namespace, environment) {
-  withEnv(["NAMESPACE=${namespace}"]) {
-    sh """
-      ${HELMFILE_COMMAND} deps
-      ${HELMFILE_COMMAND} --environment ${environment} sync
-    """
-  }
-}
-
-void helmfileDestroy(namespace, environment) {
-  withEnv(["NAMESPACE=${namespace}"]) {
-    sh """
-      ${HELMFILE_COMMAND} --environment ${environment} destroy
-    """
-  }
-}
-
-def buildUnitTestStage(env) {
-  def isDev = env == 'dev'
-  def testNamespace = "${TEST_NAMESPACE_PREFIX}-${env}"
-  // Helmfile environment
-  def environment = "${env}UnitTests"
-  def kafkaHost = "${TEST_KAFKA_K8S_OBJECT}.${testNamespace}.${TEST_SERVICE_DOMAIN_SUFFIX}:${TEST_KAFKA_PORT}"
+Closure buildUnitTestStage(env) {
   return {
-    stage("Run ${env} unit tests") {
-      container(DEFAULT_CONTAINER) {
-        // TODO NXP-29512: on a PR, make the build continue even if there is a test error
-        // on other environments than the dev one
-        // to remove when all test environments will be mandatory
-        catchError(buildResult: isPullRequest() && "dev" != env ? 'SUCCESS' : 'FAILURE', stageResult: 'FAILURE', catchInterruptions: false) {
-          script {
-            setGitHubBuildStatus("utests/${env}", "Unit tests - ${env} environment", 'PENDING')
-            if(!isDev){
-              sh "kubectl create namespace ${testNamespace}"
-            }
+    container('maven') {
+      nxWithGitHubStatus(context: "utests/backend/${env}") {
+        script {
+          def testNamespace = "${CURRENT_NAMESPACE}-compound-${BRANCH_NAME}-${BUILD_NUMBER}-${env}".replaceAll('\\.', '-').toLowerCase()
+          nxWithHelmfileDeployment(namespace: testNamespace, environment: "${env}UnitTests") {
             try {
-              echo """
-              ----------------------------------------
-              Run ${env} unit tests
-              ----------------------------------------"""
-
-              if (isDev) {
-                // empty file required by the read-project-properties goal of the properties-maven-plugin with the
-                // customEnvironment profile
-                sh "touch ${HOME}/nuxeo-test-${env}.properties"
-              } else {
-                echo "${env} unit tests: install external services"
-                helmfileSync("${testNamespace}", "${environment}")
-                // prepare test framework system properties
+              sh """
+                cat ci/mvn/nuxeo-test-${env}.properties \
+                  ci/mvn/nuxeo-test-elasticsearch.properties \
+                | envsubst > /root/nuxeo-test-${env}.properties
+              """
+              retry(3) {
                 sh """
-                  cat ci/mvn/nuxeo-test-${env}.properties \
-                    ci/mvn/nuxeo-test-elasticsearch.properties \
-                    > ci/mvn/nuxeo-test-${env}.properties~gen
-                    NAMESPACE=${testNamespace} \
-                    DOMAIN=${TEST_SERVICE_DOMAIN_SUFFIX} \
-                    envsubst < ci/mvn/nuxeo-test-${env}.properties~gen > ${HOME}/nuxeo-test-${env}.properties
+                  mvn -B -nsu -pl :nuxeo-compound-documents \
+                    -Dcustom.environment=${env} \
+                    -Dcustom.environment.log.dir=target-${env} \
+                    -Dnuxeo.test.core=${env == 'mongodb' ? 'mongodb' : 'vcs'} \
+                    -Pkafka -Dkafka.bootstrap.servers=kafka.${testNamespace}.svc.cluster.local:9092 \
+                    test
                 """
               }
-              // run unit tests for the given environment (see the customEnvironment profile in pom.xml):
-              //   - in an alternative build directory
-              //   - loading some test framework system properties
-              def testCore = env == 'mongodb' ? 'mongodb' : 'vcs'
-              def kafkaOptions = isDev ? '' : "-Pkafka -Dkafka.bootstrap.servers=${kafkaHost}"
-              def mvnCommand = """
-                mvn ${MAVEN_ARGS} \
-                  -Dcustom.environment=${env} \
-                  -Dcustom.environment.log.dir=target-${env} \
-                  -Dnuxeo.test.core=${testCore} \
-                  ${kafkaOptions} \
-                  test
-              """
-              echo "${env} unit tests: run Maven"
-              sh "${mvnCommand}"
-
-              setGitHubBuildStatus("utests/${env}", "Unit tests - ${env} environment", 'SUCCESS')
-            } catch (err) {
-              echo "${env} unit tests error: ${err}"
-              setGitHubBuildStatus("utests/${env}", "Unit tests - ${env} environment", 'FAILURE')
-              throw err
             } finally {
-              try {
-                junit allowEmptyResults: true, testResults: "**/target-${env}/surefire-reports/*.xml"
-                if (!isDev) {
-                  archiveKafkaLogs(testNamespace, "${env}-kafka.log")
-                }
-              } finally {
-                echo "${env} unit tests: clean up test namespace"
-                try {
-                  if(!isDev){
-                    helmfileDestroy("${testNamespace}", "${environment}")
-                  }
-                } finally {
-                  // clean up test namespace
-                  sh "kubectl delete namespace ${testNamespace} --ignore-not-found=true"
-                }
-              }
+              archiveArtifacts artifacts: "**/target-${env}/**/*.log"
+              junit allowEmptyResults: true, testResults: "**/target-${env}/surefire-reports/*.xml"
             }
           }
         }
       }
     }
   }
-}
-
-def buildFrontendUnitTestStage() {
-  return {
-    stage('Run frontend unit tests') {
-      container(DEFAULT_CONTAINER) {
-        script {
-          try {
-            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'PENDING')
-            withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
-              dir('nuxeo-compound-documents-web') {
-                sh 'npm install'
-                sh 'npm run test'
-              }
-            }
-            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'SUCCESS')
-          } catch(err) {
-            setGitHubBuildStatus('utests/frontend', 'Unit tests - frontend', 'FAILURE')
-            throw err
-          }
-        }
-      }
-    }
-  }
-}
-
-String getMavenFailArgs() {
-  return (isPullRequest() && pullRequest.labels.contains('failatend')) ? '--fail-at-end' : ' '
-}
-
-void runFunctionalTests(String baseDir) {
-  try {
-    retry(2) {
-      sh "mvn ${MAVEN_ARGS} ${MAVEN_FAIL_ARGS} -f ${baseDir}/pom.xml verify"
-    }
-    findText regexp: ".*ERROR.*", fileSet: "${baseDir}/**/log/server.log"
-  } catch(err) {
-    echo "${baseDir} functional tests error: ${err}"
-    throw err
-  } finally {
-    try {
-      archiveArtifacts allowEmptyArchive: true, artifacts: "${baseDir}/**/target/failsafe-reports/*, ${baseDir}/**/target/**/*.log, ${baseDir}/**/target/*.png, ${baseDir}**/target/cucumber-reports/*.json, ${baseDir}/**/target/*.html, ${baseDir}/**/target/**/distribution.properties, ${baseDir}/**/target/**/configuration.properties"
-    } catch (err) {
-      echo hudson.Functions.printThrowable(err)
-    }
-  }
-}
-
-String getCurrentNamespace() {
-  container(DEFAULT_CONTAINER) {
-    return sh(returnStdout: true, script: "kubectl get pod ${NODE_NAME} -ojsonpath='{..namespace}'")
-  }
-}
-
-void archiveKafkaLogs(namespace, logFile) {
-  // don't fail if pod doesn't exist
-  sh "kubectl logs ${TEST_KAFKA_POD_NAME} --namespace=${namespace} > ${logFile} || true"
-  archiveArtifacts allowEmptyArchive: true, artifacts: "${logFile}"
 }
 
 pipeline {
   agent {
-    label 'nuxeo-web-ui-ftests'
+    label 'jenkins-nuxeo-package-lts-2021'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
+    disableConcurrentBuilds(abortPrevious: true)
+    githubProjectProperty(projectUrlStr: 'https://github.com/nuxeo/nuxeo-compound-documents')
   }
   environment {
-    TEST_KAFKA_K8S_OBJECT = 'kafka'
-    TEST_KAFKA_PORT = '9092'
-    TEST_KAFKA_POD_NAME = "${TEST_KAFKA_K8S_OBJECT}-0"
-    TEST_SERVICE_DOMAIN_SUFFIX = 'svc.cluster.local'
-    SLACK_CHANNEL = 'platform-notifs'
-    CONNECT_PREPROD_URL = 'https://nos-preprod-connect.nuxeocloud.com/nuxeo'
-    MAVEN_ARGS = getMavenArgs()
-    MAVEN_FAIL_ARGS = getMavenFailArgs()
-    VERSION = getVersion()
-    NUXEO_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
-    CURRENT_NAMESPACE = getCurrentNamespace()
+    CURRENT_NAMESPACE = nxK8s.getCurrentNamespace()
+    VERSION = nxUtils.getVersion()
+    NUXEO_COMPOUND_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     TEST_NAMESPACE_PREFIX = "${CURRENT_NAMESPACE}-compound-documents-unit-tests-${BRANCH_NAME}-${BUILD_NUMBER}".toLowerCase()
     HELMFILE_COMMAND = "helmfile --file ci/helm/helmfile.yaml --helm-binary /usr/bin/helm3"
     HOME = '/root'
@@ -287,87 +73,39 @@ pipeline {
   stages {
     stage('Set Labels') {
       steps {
-        container(DEFAULT_CONTAINER) {
-          setLabels()
+        container('maven') {
+          script {
+            nxK8s.setPodLabel()
+          }
         }
       }
     }
     stage('Update Version') {
       steps {
-        container(DEFAULT_CONTAINER) {
+        container('maven') {
           script {
+            nxMvn.updateVersion()
+          }
+        }
+      }
+    }
+    stage('Compile') {
+      steps {
+        container('maven') {
+          nxWithGitHubStatus(context: 'compile') {
             echo """
             ----------------------------------------
-            Update version
-            ----------------------------------------
-            New version: ${VERSION}
-            """
-            sh "mvn ${MAVEN_ARGS} versions:set -DnewVersion=${VERSION} -DgenerateBackupPoms=false"
-          }
-        }
-      }
-    }
-    stage('Git commit') {
-      when {
-        allOf {
-          not {
-            branch 'PR-*'
-          }
-          not {
-            environment name: 'DRY_RUN', value: 'true'
-          }
-        }
-      }
-      steps {
-        container(DEFAULT_CONTAINER) {
-          echo """
-          ----------------------------------------
-          Git commit
-          ----------------------------------------
-          """
-          sh """
-            git commit -a -m "Release ${VERSION}"
-          """
-        }
-      }
-    }
-
-    stage('Build') {
-      steps {
-        container(DEFAULT_CONTAINER) {
-          setGitHubBuildStatus('maven/build', 'Build', 'PENDING')
-          sh "mvn ${MAVEN_ARGS} -V -T4C -DskipTests install"
-        }
-      }
-      post {
-        success {
-          script {
-            if(!isPullRequest()){
-              archiveArtifacts allowEmptyArchive: true, artifacts: "${NUXEO_PACKAGE_PATH}"
-            }
-          }
-          setGitHubBuildStatus('maven/build', 'Build', 'SUCCESS')
-        }
-        unsuccessful {
-          setGitHubBuildStatus('maven/build', 'Build', 'FAILURE')
-        }
-      }
-    }
-    stage('Linting') {
-      steps {
-        container(DEFAULT_CONTAINER) {
-          setGitHubBuildStatus('npm/lint', 'Lint', 'PENDING')
-          dir ('nuxeo-compound-documents-web') {
-            sh 'npm run lint'
+            Compile
+            ----------------------------------------"""
+            echo "MAVEN_OPTS=$MAVEN_OPTS"
+            sh 'mvn -B -nsu -T4C install -DskipTests'
           }
         }
       }
       post {
         success {
-          setGitHubBuildStatus('npm/lint', 'Lint', 'SUCCESS')
-        }
-        unsuccessful {
-          setGitHubBuildStatus('npm/lint', 'Lint', 'FAILURE')
+          archiveArtifacts artifacts: '**/target/*.jar, **/target/nuxeo-*-package-*.zip'
+          junit testResults: '**/target/surefire-reports/*.xml, **/target/failsafe-reports/*.xml', allowEmptyResults: true
         }
       }
     }
@@ -375,139 +113,123 @@ pipeline {
       steps {
         script {
           def stages = [:]
-          for (env in testEnvironments) {
-            stages["Run ${env} unit tests"] = buildUnitTestStage(env);
+          stages['Frontend'] = {
+            container('maven') {
+              nxWithGitHubStatus(context: 'utests/frontend') {
+                withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
+                  dir('nuxeo-compound-documents-web') {
+                    sh 'npm run test'
+                  }
+                }
+              }
+            }
           }
-          // XXX - unit tests disabled in the CI to prevent breaking the build until we have tests to run
-          stages["Run frontend unit tests"] = buildFrontendUnitTestStage();
+          stages['Backend - dev'] = {
+            container('maven') {
+              nxWithGitHubStatus(context: 'utests/backend/dev') {
+                try {
+                  // empty file required by the read-project-properties goal of the properties-maven-plugin with the
+                  // customEnvironment profile
+                  sh 'touch /root/nuxeo-test-dev.properties'
+                  retry(3) {
+                    sh 'mvn -B -nsu -pl :nuxeo-compound-documents -Dcustom.environment=dev -Dcustom.environment.log.dir=target-dev test'
+                  }
+                } finally {
+                  archiveArtifacts artifacts: '**/target-dev/**/*.log'
+                  junit allowEmptyResults: true, testResults: "**/target-dev/surefire-reports/*.xml"
+                }
+              }
+            }
+          }
+          stages['Backend - MongoDB'] = buildUnitTestStage('mongodb')
           parallel stages
         }
       }
     }
     stage('Run functional tests') {
       steps {
-        setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'PENDING')
-        container(DEFAULT_CONTAINER) {
+        container('maven') {
           script {
-            echo """
-            ----------------------------------------
-            Run Webdriver functional tests
-            ----------------------------------------"""
-            withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
-              sh(
-                script: '''#!/bin/bash +x
+            nxWithGitHubStatus(context: "ftests/dev") {
+              echo """
+              ----------------------------------------
+              Run Webdriver functional tests
+              ----------------------------------------"""
+              withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
+                sh(script: '''#!/bin/bash +x
                   echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
-                '''
-              )
-              withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
-                runFunctionalTests('nuxeo-compound-documents-web/ftest')
+                ''')
+                withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
+                  retry(2) {
+                    sh "mvn -B -nsu -f nuxeo-compound-documents-web/ftest/pom.xml verify"
+                  }
+                  nxUtils.lookupText(regexp: ".*ERROR.*(?=(?:\\n.*)*\\[.*FrameworkLoader\\] Nuxeo Platform is Trying to Shut Down)",
+                    fileSet: "**/log/server.log")
+                }
               }
             }
           }
         }
       }
       post {
-        success {
-          setGitHubBuildStatus('ftests/dev', 'Functional tests - dev environment', 'SUCCESS')
-        }
-        unsuccessful {
-          setGitHubBuildStatus('ftests/dev', 'Functional tests - frontend', 'FAILURE')
-          // findText does mark the build in FAILURE but doesn't stop the pipeline, error does
-          error "Errors were found!"
+        always {
+          archiveArtifacts artifacts: '**/ftest/target/screenshots/**', allowEmptyArchive: true
+          cucumber(fileIncludePattern: '**/*.json', jsonReportDirectory: 'nuxeo-compound-documents-web/ftest/target/cucumber-reports/',
+              sortingMethod: 'NATURAL')
         }
       }
     }
-    stage('Git tag and push') {
+    stage('Git commit, tag and push') {
       when {
-        allOf {
-          not {
-            branch 'PR-*'
-          }
-          not {
-            environment name: 'DRY_RUN', value: 'true'
-          }
-        }
+        expression { !nxUtils.isPullRequest() }
       }
       steps {
-        container(DEFAULT_CONTAINER) {
-          echo """
-          ----------------------------------------
-          Git tag and push
-          ----------------------------------------
-          """
-          sh """
-            #!/usr/bin/env bash -xe
-            # create the Git credentials
-            jx step git credentials
-            git config credential.helper store
-            # Git tag
-            git tag -a v${VERSION} -m "Release ${VERSION}"
-            git push origin v${VERSION}
-          """
+        container('maven') {
+          script {
+            echo """
+            ----------------------------------------
+            Git commit, tag and push
+            ----------------------------------------
+            """
+            nxGit.commitTagPush()
+          }
         }
       }
     }
     stage('Deploy Maven artifacts') {
       when {
-        allOf {
-          not {
-            branch 'PR-*'
-          }
-          not {
-            environment name: 'DRY_RUN', value: 'true'
-          }
-        }
+        expression { !nxUtils.isPullRequest() }
       }
       steps {
-        setGitHubBuildStatus('maven/deploy', 'Deploy Maven artifacts', 'PENDING')
-        container(DEFAULT_CONTAINER) {
-          echo """
-          ----------------------------------------
-          Deploy Maven artifacts
-          ----------------------------------------"""
-          sh "mvn ${MAVEN_ARGS} -DskipTests deploy"
-        }
-      }
-      post {
-        success {
-          setGitHubBuildStatus('maven/deploy', 'Deploy Maven artifacts', 'SUCCESS')
-        }
-        unsuccessful {
-          setGitHubBuildStatus('maven/deploy', 'Deploy Maven artifacts', 'FAILURE')
+        container('maven') {
+          nxWithGitHubStatus(context: 'maven/deploy', message: 'Deploy Maven artifacts') {
+            script {
+              echo """
+              ----------------------------------------
+              Deploy Maven artifacts
+              ----------------------------------------"""
+              nxMvn.deploy()
+            }
+          }
         }
       }
     }
-    stage('Deploy Nuxeo Package') {
+    stage('Deploy Nuxeo package') {
       when {
-        allOf {
-          not {
-            branch 'PR-*'
-          }
-          not {
-            environment name: 'DRY_RUN', value: 'true'
-          }
-        }
+        expression { !nxUtils.isPullRequest() }
       }
       steps {
-        setGitHubBuildStatus('package/deploy', 'Deploy Nuxeo Package', 'PENDING')
-        container(DEFAULT_CONTAINER) {
-          echo """
-          ----------------------------------------
-          Upload Nuxeo Package to ${CONNECT_PREPROD_URL}
-          ----------------------------------------"""
-          withCredentials([usernameColonPassword(credentialsId: 'connect-preprod', variable: 'CONNECT_PASS')]) {
-            sh '''
-              curl --fail -i -u $CONNECT_PASS -F package=@$NUXEO_PACKAGE_PATH $CONNECT_PREPROD_URL/site/marketplace/upload?batch=true;
-            '''
+        container('maven') {
+          nxWithGitHubStatus(context: 'package/deploy', message: 'Deploy Nuxeo packages') {
+            script {
+              echo """
+              ----------------------------------------
+              Upload Nuxeo Package to ${CONNECT_PREPROD_SITE_URL}
+              ----------------------------------------"""
+              nxUtils.postForm(credentialsId: 'connect-preprod', url: "${CONNECT_PREPROD_SITE_URL}marketplace/upload?batch=true",
+                  form: ["package=@${NUXEO_COMPOUND_PACKAGE_PATH}"])
+            }
           }
-        }
-      }
-      post {
-        success {
-          setGitHubBuildStatus('package/deploy', 'Deploy Nuxeo Package', 'SUCCESS')
-        }
-        unsuccessful {
-          setGitHubBuildStatus('package/deploy', 'Deploy Nuxeo Package', 'FAILURE')
         }
       }
     }
@@ -515,30 +237,8 @@ pipeline {
   post {
     always {
       script {
-        if (!isPullRequest()) {
-          // update JIRA issue
-          step([$class: 'JiraIssueUpdater', issueSelector: [$class: 'DefaultIssueSelector'], scm: scm])
-        }
-      }
-    }
-    success {
-      script {
-        if (!isPullRequest()) {
-          currentBuild.description = "Build ${VERSION}"
-          if (env.DRY_RUN != 'true'
-            && !hudson.model.Result.SUCCESS.toString().equals(currentBuild.getPreviousBuild()?.getResult())) {
-            slackSend(channel: "${SLACK_CHANNEL}", color: 'good', message: "Successfully built nuxeo/nuxeo-compound-documents ${BRANCH_NAME} #${BUILD_NUMBER}: ${BUILD_URL}")
-          }
-        }
-      }
-    }
-    unsuccessful {
-      script {
-        if (!isPullRequest()
-          && env.DRY_RUN != 'true'
-          && ![hudson.model.Result.ABORTED.toString(), hudson.model.Result.NOT_BUILT.toString()].contains(currentBuild.result)) {
-          slackSend(channel: "${SLACK_CHANNEL}", color: 'danger', message: "Failed to build nuxeo/nuxeo-compound-documents ${BRANCH_NAME} #${BUILD_NUMBER}: ${BUILD_URL}")
-        }
+        currentBuild.description = "Build ${VERSION}"
+        nxJira.updateIssues()
       }
     }
   }
