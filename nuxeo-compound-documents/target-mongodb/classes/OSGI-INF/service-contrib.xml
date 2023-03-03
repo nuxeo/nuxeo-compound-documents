@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.service">
+  <documentation>
+    A service to handle compound documents.
+  </documentation>
+  <implementation class="org.nuxeo.compound.documents.CompoundDocumentServiceImpl" />
+  <service>
+    <provide interface="org.nuxeo.compound.documents.CompoundDocumentService" />
+  </service>
+  <extension-point name="ignoredFiles">
+    <documentation>
+      Extension point to register the file names to ignore when importing a compound document archive.
+    </documentation>
+    <object class="org.nuxeo.compound.documents.IgnoredFilesDescriptor" />
+  </extension-point>
+  <documentation>
+    This is a default ignored files. File names listed here are ignored when importing a compound document archive.
+  </documentation>
+  <extension target="org.nuxeo.compound.documents.service" point="ignoredFiles">
+    <files>
+      <file regex="true">\..*</file>
+      <file>__MACOSX</file>
+      <file>desktop.ini</file>
+      <file>Thumbs.db</file>
+      <file>..</file>
+    </files>
+  </extension>
+</component>
