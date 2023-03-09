@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.operations" version="1.0">
+  <documentation>Contribute logic to determinate what kind of compound document we are dealing with</documentation>
+  <extension target="org.nuxeo.automation.scripting.internals.AutomationScriptingComponent" point="operation">
+    <scriptedOperation id="javascript.GetCompoundDocumentType">
+      <inputType>document</inputType>
+      <outputType>string</outputType>
+      <category>javascript</category>
+      <param name="entries" type="strings" />
+      <description>Returns the compound document type based on the given entries.</description>
+      <script>
+        function run(input) {
+          return "CompoundDocument";
+        }
+      </script>
+    </scriptedOperation>
+    <scriptedOperation id="javascript.GetCompoundDocumentFolderType">
+      <inputType>document</inputType>
+      <outputType>string</outputType>
+      <category>javascript</category>
+      <description>Returns the compound document folder type based on the given document.</description>
+      <script>
+        function run(input) {
+          return "CompoundDocumentFolder";
+        }
+      </script>
+    </scriptedOperation>
+  </extension>
+</component>

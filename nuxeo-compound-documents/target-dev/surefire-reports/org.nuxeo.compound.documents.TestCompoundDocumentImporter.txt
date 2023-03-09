@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: org.nuxeo.compound.documents.TestCompoundDocumentImporter
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.749 s - in org.nuxeo.compound.documents.TestCompoundDocumentImporter
