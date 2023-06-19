@@ -33,3 +33,4 @@ chromedriver.log
 package-lock.json
 *.log
 *.pyc
+coverage
