@@ -7,8 +7,8 @@
   "devDependencies": {
     "@cucumber/cucumber": "^7.0.0",
     "@esm-bundle/chai": "^4.3.4-fix.0",
-    "@nuxeo/nuxeo-web-ui-ftest": "^3.0.12",
-    "@nuxeo/testing-helpers": "^3.0.12",
+    "@nuxeo/nuxeo-web-ui-ftest": "~3.1.0",
+    "@nuxeo/testing-helpers": "~3.1.0",
     "@open-wc/karma-esm": "^4.0.0",
     "@polymer/iron-icons": "^3.0.1",
     "@rollup/plugin-node-resolve": "^7.1.3",
@@ -40,8 +40,8 @@
     "sinon-chai": "^3.7.0"
   },
   "dependencies": {
-    "@nuxeo/nuxeo-elements": "^3.0.12",
-    "@nuxeo/nuxeo-ui-elements": "^3.0.12",
+    "@nuxeo/nuxeo-elements": "~3.1.0",
+    "@nuxeo/nuxeo-ui-elements": "~3.1.0",
     "@polymer/iron-flex-layout": "^3.0.1",
     "@polymer/iron-icon": "^3.0.1",
     "@polymer/paper-spinner": "^3.0.2",
