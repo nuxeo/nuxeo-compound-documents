@@ -1,0 +1,5 @@
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2021/nuxeo-compound-documents/src/test/java/org/nuxeo/compound/documents/TestCompoundDocumentImporter.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2021/nuxeo-compound-documents/src/test/java/org/nuxeo/compound/documents/CompoundDocumentUtils.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2021/nuxeo-compound-documents/src/test/java/org/nuxeo/compound/documents/TestCompoundDocumentRest.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2021/nuxeo-compound-documents/src/test/java/org/nuxeo/compound/documents/CompoundDocumentsFeature.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2021/nuxeo-compound-documents/src/test/java/org/nuxeo/compound/documents/TestCompoundDocumentBreadcrumbJsonEnricher.java

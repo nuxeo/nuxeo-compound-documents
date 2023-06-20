@@ -1,0 +1,18 @@
+# Created at 2023-06-20T10:07:01.106
+Picked up JAVA_TOOL_OPTIONS: -Dsun.zip.disableMemoryMapping=true -XX:+UseParallelGC -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90
+
+# Created at 2023-06-20T10:07:20.304
+WARNING: An illegal reflective access operation has occurred
+
+# Created at 2023-06-20T10:07:20.306
+WARNING: Illegal reflective access by org.apache.catalina.loader.WebappClassLoaderBase (file:/root/.mvnrepository/org/apache/tomcat/tomcat-catalina/9.0.67/tomcat-catalina-9.0.67.jar) to field java.io.ObjectStreamClass$Caches.localDescs
+
+# Created at 2023-06-20T10:07:20.306
+WARNING: Please consider reporting this to the maintainers of org.apache.catalina.loader.WebappClassLoaderBase
+
+# Created at 2023-06-20T10:07:20.307
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+
+# Created at 2023-06-20T10:07:20.307
+WARNING: All illegal access operations will be denied in a future release
+
