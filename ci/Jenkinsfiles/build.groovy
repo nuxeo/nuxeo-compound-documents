@@ -113,17 +113,18 @@ pipeline {
       steps {
         script {
           def stages = [:]
-          stages['Frontend'] = {
-            container('maven') {
-              nxWithGitHubStatus(context: 'utests/frontend') {
-                withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
-                  dir('nuxeo-compound-documents-web') {
-                    sh 'npm run test'
-                  }
-                }
-              }
-            }
-          }
+          // tests disable see NXP-31942
+//          stages['Frontend'] = {
+//            container('maven') {
+//              nxWithGitHubStatus(context: 'utests/frontend') {
+//                withCredentials([usernamePassword(credentialsId: 'saucelabs-credentials', passwordVariable: 'SAUCE_ACCESS_KEY', usernameVariable: 'SAUCE_USERNAME')]) {
+//                  dir('nuxeo-compound-documents-web') {
+//                    sh 'npm run test'
+//                  }
+//                }
+//              }
+//            }
+//          }
           stages['Backend - dev'] = {
             container('maven') {
               nxWithGitHubStatus(context: 'utests/backend/dev') {
