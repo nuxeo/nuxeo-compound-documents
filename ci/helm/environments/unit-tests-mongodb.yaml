@@ -1,6 +1,11 @@
+# enabled conditions
 mongodb:
   enabled: true
 opensearch:
   enabled: true
 kafka:
   enabled: true
+
+# values definition
+labels:
+  usage: utests

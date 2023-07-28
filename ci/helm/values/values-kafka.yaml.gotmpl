@@ -25,12 +25,9 @@ extraEnvVars:
   - name: KAFKA_CFG_STATE_LOG_REPLICATION_FACTOR
     value: "1"
 podLabels:
-  {{- if (env "BRANCH_NAME") }}
-  branch: {{ env "BRANCH_NAME" | quote }}
-  {{- end }}
-  resource: pod
-  team: platform
-  usage: utests
+  {{ tpl (readFile "labels.yaml.gotmpl") . | nindent 2 }}
+  dev.nuxeo.com/app: kafka
+  dev.nuxeo.com/resource: pod
 persistence:
   enabled: false
 tolerations:
@@ -45,12 +42,9 @@ zookeeper:
     tag: "3.6.2"
   replicaCount: 1
   podLabels:
-    {{- if (env "BRANCH_NAME") }}
-    branch: {{ env "BRANCH_NAME" | quote }}
-    {{- end }}
-    resource: pod
-    team: platform
-    usage: utests
+    {{ tpl (readFile "labels.yaml.gotmpl") . | nindent 4 }}
+    dev.nuxeo.com/app: zookeeper
+    dev.nuxeo.com/resource: pod
   persistence:
     enabled: false
   tolerations:
