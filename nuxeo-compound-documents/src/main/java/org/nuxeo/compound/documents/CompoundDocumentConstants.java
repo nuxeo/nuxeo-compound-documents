@@ -25,6 +25,7 @@ public final class CompoundDocumentConstants {
 
     public static final String COMPOUND_DOCUMENT_FACET = "CompoundDocument";
 
+    //This could be overridden by nuxeo studio - automation scripting contribution
     public static final String COMPOUND_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentType";
 
     public static final String COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentFolderType";
