@@ -3,15 +3,15 @@
   <documentation>
     A service to handle compound documents.
   </documentation>
-  <implementation class="org.nuxeo.compound.documents.CompoundDocumentServiceImpl" />
+  <implementation class="org.nuxeo.compound.documents.service.CompoundDocumentServiceImpl" />
   <service>
-    <provide interface="org.nuxeo.compound.documents.CompoundDocumentService" />
+    <provide interface="org.nuxeo.compound.documents.service.CompoundDocumentService" />
   </service>
   <extension-point name="ignoredFiles">
     <documentation>
       Extension point to register the file names to ignore when importing a compound document archive.
     </documentation>
-    <object class="org.nuxeo.compound.documents.IgnoredFilesDescriptor" />
+    <object class="org.nuxeo.compound.documents.configs.IgnoredFilesDescriptor" />
   </extension-point>
   <documentation>
     This is a default ignored files. File names listed here are ignored when importing a compound document archive.

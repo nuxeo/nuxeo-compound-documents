@@ -21,8 +21,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
+import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
+import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getBadArchive;
@@ -83,6 +83,7 @@ public class TestCompoundDocumentImporter {
     }
 
     @Test
+    @Deploy("org.nuxeo.compound.documents:operations-test-contrib.xml")
     public void testCreateCompoundDocumentWithPreviewAsThumbnail() throws IOException {
         Blob blob = getPreviewTestArchive();
         FileImporterContext context = FileImporterContext.builder(session, blob, "/").build();

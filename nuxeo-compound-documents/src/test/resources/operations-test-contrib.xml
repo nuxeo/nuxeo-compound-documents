@@ -33,6 +33,31 @@
         }
       </script>
     </scriptedOperation>
+    <scriptedOperation id="javascript.GetCompoundDocumentPreview">
+      <inputType>document</inputType>
+      <outputType>document</outputType>
+      <category>javascript</category>
+      <description>Returns the compound document preview based on the given document.</description>
+      <script>
+        function run(input) {
+          var query = "Select * FROM Document Where ecm:isVersion = 0 AND ecm:isProxy = 0 AND ecm:isTrashed = 0 AND ecm:ancestorId = '"+input.id+"'";
+          var children = Repository.Query(input, {
+            'query': query
+          });
+          children.forEach(function(item) {
+            var blob = item['file:content'];
+            if (!blob) {
+              return;
+            }
+            if (blob.filename.startsWith('preview')) {
+              input['cp:preview'] = item.id;
+            }
+          });
+          input = Document.Save(input, {});
+          return input;
+        }
+      </script>
+    </scriptedOperation>
   </extension>
   <extension target="org.nuxeo.ecm.core.schema.TypeService" point="doctype">
     <doctype name="CustomCompoundDocument" extends="Document">

@@ -17,6 +17,7 @@
 
 package org.nuxeo.compound.documents;
 
+import org.nuxeo.compound.documents.service.CompoundDocumentService;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.filemanager.api.FileImporterContext;
 import org.nuxeo.ecm.platform.filemanager.service.extension.DefaultFileImporter;
