@@ -9,4 +9,19 @@
       <xs:restriction base="xs:string" ref:resolver="documentResolver" ref:store="id" />
     </xs:simpleType>
   </xs:element>
+  <xs:element name="files" type="nxs:filesList" />
+  <xs:complexType name="filesList">
+    <xs:sequence>
+      <xs:element name="item" type="nxs:file-compound" minOccurs="0"
+                  maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="file-compound">
+    <xs:sequence>
+      <xs:element name="latestVersionDocId" type="xs:string" />
+      <xs:element name="filepath" type="xs:string" />
+      <xs:element name="latestVersion" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
 </xs:schema>
