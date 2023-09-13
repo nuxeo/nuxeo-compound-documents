@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.nuxeo.compound.documents;
+package org.nuxeo.compound.documents.thumbnail;
 
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_FACET;
 import static org.nuxeo.ecm.platform.thumbnail.ThumbnailConstants.THUMBNAIL_PROPERTY_NAME;

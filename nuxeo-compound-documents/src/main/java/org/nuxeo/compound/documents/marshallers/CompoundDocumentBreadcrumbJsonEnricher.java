@@ -14,9 +14,9 @@
  * limitations under the License.
  *
  */
-package org.nuxeo.compound.documents;
+package org.nuxeo.compound.documents.marshallers;
 
-import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCUMENT_FACET;
+import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_DOCUMENT_FACET;
 import static org.nuxeo.ecm.core.io.registry.reflect.Instantiations.SINGLETON;
 import static org.nuxeo.ecm.core.io.registry.reflect.Priorities.REFERENCE;
 
