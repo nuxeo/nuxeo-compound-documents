@@ -29,4 +29,6 @@ public final class CompoundDocumentConstants {
 
     public static final String COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentFolderType";
 
+    public static final String COMPOUND_PREVIEW_DETECTION_OPERATION = "javascript.GetCompoundDocumentPreview";
+
 }
