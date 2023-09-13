@@ -4,6 +4,11 @@
   <description>Nuxeo Compound Documents allow binding several documents as parts of one complex document.</description>
   <home-page>https://doc.nuxeo.com/</home-page>
   <vendor>Nuxeo</vendor>
+  <installer restart="true" />
+  <uninstaller restart="true" />
+  <nuxeo-validation>nuxeo_certified</nuxeo-validation>
+  <production-state>production_ready</production-state>
+  <supported>true</supported>
   <target-platform>
     <name>@DISTRIBUTION_NAME@</name>
     <version>[@NUXEO_PLATFORM_VERSION@,2023.0)</version>
@@ -14,4 +19,5 @@
   </dependencies>
   <license>Apache 2.0</license>
   <license-url>http://www.apache.org/licenses/LICENSE-2.0</license-url>
+  <visibility>MARKETPLACE</visibility>
 </package>

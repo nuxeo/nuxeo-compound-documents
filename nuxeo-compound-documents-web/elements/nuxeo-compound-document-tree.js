@@ -445,7 +445,7 @@ Polymer({
   _isCompound(doc) {
     return (
       this.hasFacet(doc, 'CompoundDocument') ||
-      (doc && this.hasFacet(doc, 'Folderish') && doc.type === 'CompoundDocumentFolder')
+      (doc && this.hasFacet(doc, 'Folderish') && this.hasFacet(doc, 'CompoundDocumentFolder'))
     );
   },
 

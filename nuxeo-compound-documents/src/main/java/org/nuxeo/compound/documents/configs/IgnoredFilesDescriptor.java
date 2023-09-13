@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package org.nuxeo.compound.documents;
+package org.nuxeo.compound.documents.configs;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -8,4 +8,6 @@ Nuxeo-Component: OSGI-INF/core-types-contrib.xml,
  OSGI-INF/service-contrib.xml,
  OSGI-INF/operations-contrib.xml,
  OSGI-INF/thumbnailfactory-contrib.xml,
- OSGI-INF/marshallers-contrib.xml
+ OSGI-INF/marshallers-contrib.xml,
+ OSGI-INF/versioning-contrib.xml,
+ OSGI-INF/mimetype-contrib.xml

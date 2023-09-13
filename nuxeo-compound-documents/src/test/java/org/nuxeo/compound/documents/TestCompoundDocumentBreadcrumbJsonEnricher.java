@@ -16,7 +16,7 @@
  */
 package org.nuxeo.compound.documents;
 
-import static org.nuxeo.compound.documents.CompoundDocumentBreadcrumbJsonEnricher.NAME;
+import static org.nuxeo.compound.documents.marshallers.CompoundDocumentBreadcrumbJsonEnricher.NAME;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_FOLDER_DOCTYPE;
 
