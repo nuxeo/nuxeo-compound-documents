@@ -19,7 +19,7 @@
 
   <xs:complexType name="file-compound">
     <xs:sequence>
-      <xs:element name="uid" type="xs:string" />
+      <xs:element name="latestVersionDocId" type="xs:string" />
       <xs:element name="filepath" type="xs:string" />
       <xs:element name="latestVersion" type="xs:string" />
     </xs:sequence>

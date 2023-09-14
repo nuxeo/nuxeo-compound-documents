@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.versioning" version="1.0">
+
+  <extension target="org.nuxeo.ecm.core.event.EventServiceComponent" point="listener">
+    <listener name="compoundDocumentVersionEventListener" async="true" postCommit="true"
+              class="org.nuxeo.compound.documents.CompoundDocumentVersioningListener"
+              priority="50" retryCount="1">
+      <event>documentCheckedIn</event>
+      <event>documentRemoved</event>
+      <event>versionRemoved</event>
+      <event>documentRestored</event>
+    </listener>
+  </extension>
+
+  <require>org.nuxeo.ecm.core.versioning.default-policies</require>
+  <extension target="org.nuxeo.ecm.core.api.versioning.VersioningService" point="policies">
+    <policy id="note-as-wiki" order="20" increment="NONE"/>
+  </extension>
+
+  <extension target="org.nuxeo.ecm.core.api.versioning.VersioningService" point="policies">
+    <policy beforeUpdate="false" id="compound-document-default-versioning-policy" order="1" increment="MAJOR">
+      <filter-id>compound-document-default-versioning-filter</filter-id>
+    </policy>
+    <policy beforeUpdate="false" id="compound-document-child-default-versioning-policy" order="2" increment="MINOR">
+      <filter-id>compound-document-child-default-versioning-filter</filter-id>
+    </policy>
+  </extension>
+
+  <extension target="org.nuxeo.ecm.core.api.versioning.VersioningService" point="filters">
+    <filter id="compound-document-default-versioning-filter" class="org.nuxeo.compound.documents.CompoundDocumentDefaultVersioningFilter">
+    </filter>
+    <filter id="compound-document-child-default-versioning-filter" class="org.nuxeo.compound.documents.CompoundDocumentChildDefaultVersioningFilter">
+    </filter>
+  </extension>
+
+</component>
+
