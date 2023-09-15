@@ -20,6 +20,7 @@ import org.nuxeo.runtime.api.Framework;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -53,8 +54,9 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
                     DocumentEventContext docCtx = (DocumentEventContext) ctx;
                     document = docCtx.getSourceDocument();
                     coreSession = docCtx.getCoreSession();
-                    parentCompoundDoc = coreSession.getParentDocuments(document.getRef())
-                            .stream()
+                    List<DocumentModel> parents = coreSession.getParentDocuments(document.getRef());
+                    Collections.reverse(parents);
+                    parentCompoundDoc = parents.stream()
                             .filter(parent -> parent.hasFacet("CompoundDocument"))
                             .filter(parent -> !parent.getId().equals(document.getId()))
                             .findFirst();
@@ -64,7 +66,6 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
                 } else if (DOCUMENT_RESTORED.equals(event.getName()) && document.hasFacet("CompoundDocument")) {
                     handleRestoredEvent(event);
                 }
-
             }
         }
     }

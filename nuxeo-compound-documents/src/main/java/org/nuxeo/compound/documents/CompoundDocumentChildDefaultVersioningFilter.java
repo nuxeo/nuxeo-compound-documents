@@ -10,7 +10,7 @@ public class CompoundDocumentChildDefaultVersioningFilter implements VersioningP
 
     @Override
     public boolean test(DocumentModel previousDocument, DocumentModel currentDocument) {
-        return currentDocument.getContextData().get(CoreSession.SOURCE) == "compound-child";
+        return currentDocument.getContextData().get(CoreSession.SOURCE) == "compound-child" && !currentDocument.hasFacet("CompoundDocument");
     }
 
 }
