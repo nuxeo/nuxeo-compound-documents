@@ -26,8 +26,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -60,10 +62,9 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         String compoundDocName = FilenameUtils.removeExtension(archive.getFilename());
         var parentDoc = session.getDocument(new PathRef(parent));
         try (var zip = new ZipFile(getFile(archive))) {
-            List<ZipEntry> entries = zip.stream()
-                                        .filter(this::isAllowedEntry)
-                                        .sorted(Comparator.comparing(ZipEntry::getName))
-                                        .collect(Collectors.toList());
+            List<ZipEntry> entries = zip.stream().filter(this::isAllowedEntry).collect(Collectors.toList());
+            addDirectories(entries);
+            entries = entries.stream().sorted(Comparator.comparing(ZipEntry::getName)).collect(Collectors.toList());
             // Avoid giving the whole blobs
             List<String> entryNames = entries.stream().map(ZipEntry::getName).collect(Collectors.toList());
             String compoundType = runScript(COMPOUND_DOCTYPE_DETECTION_OPERATION, session, parentDoc,
@@ -84,6 +85,22 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                     archive.getFilename(), parent);
             throw new NuxeoException(message, e);
         }
+    }
+
+    private List<ZipEntry> addDirectories(List<ZipEntry> entries) {
+        List<ZipEntry> directories = new ArrayList<>();
+        Set<String> content = new HashSet<>();
+        entries.forEach(entry -> content.add(entry.getName()));
+        for (ZipEntry file : entries) {
+            String[] segments = new Path(file.getName()).segments();
+            for(String segment : segments) {
+                if (new Path(segment).getFileExtension() == null && content.add(segment + "/")) {
+                    directories.add(new ZipEntry(segment + "/"));
+                }
+            }
+        }
+        entries.addAll(directories);
+        return entries;
     }
 
     protected File getFile(Blob archive) {
@@ -155,7 +172,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
 
             Map<String, Serializable> entryFileDef = new HashMap<>();
             entryFileDef.put("latestVersionDocId", session.getLastDocumentVersion(doc.getRef()).getId());
-            entryFileDef.put("latestVersion", doc.getPath().removeFirstSegments(compoundDoc.getPath().segmentCount() - 1).toString() + " - " + doc.getVersionLabel());
+            entryFileDef.put("latestVersion", doc.getPath().removeFirstSegments(compoundDoc.getPath().segmentCount() - 1).toString() + " - Version " + doc.getVersionLabel());
             entryFileDef.put("filepath", doc.getPathAsString());
             compoundDocumentFileDef.add(entryFileDef);
 

@@ -125,7 +125,7 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
         CompoundDocumentService compoundDocumentService = Framework.getService(CompoundDocumentService.class);
         compoundDocumentService.updateFileDefinition(parent, compoundDocumentService.getFileIndexBy(parent, document.getPathAsString()), file -> {
             file.put("latestVersionDocId", latestVersion.get().getId());
-            file.put("latestVersion", document.getPath().removeFirstSegments(parent.getPath().segmentCount() - 1).toString() + " - " + latestVersion.get().getLabel());
+            file.put("latestVersion", document.getPath().removeFirstSegments(parent.getPath().segmentCount() - 1).toString() + " - Version " + latestVersion.get().getLabel());
             file.put("filepath", document.getPathAsString());
         });
         coreSession.saveDocument(parent);
