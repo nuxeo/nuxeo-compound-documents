@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.mimetypes">
+    <extension point="mimetype" target="org.nuxeo.ecm.platform.mimetype.service.MimetypeRegistryService">
+        <!-- WEBP -->
+        <mimetype binary="true" iconPath="image.gif" normalized="application/vnd.adobe.indesign-idml-package">
+            <mimetypes>
+                <mimetype>application/vnd.adobe.indesign-idml-package</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>idml</extension>
+            </extensions>
+        </mimetype>
+    </extension>
+</component>
