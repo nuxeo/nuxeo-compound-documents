@@ -18,6 +18,7 @@ package org.nuxeo.compound.documents;
 
 import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
 import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
+import static org.nuxeo.compound.documents.CompoundDocumentConstants.COMPOUND_PREVIEW_DETECTION_OPERATION;
 import static org.nuxeo.runtime.model.Descriptor.UNIQUE_DESCRIPTOR_ID;
 
 import java.io.File;
@@ -77,8 +78,10 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             List<Map<String, Serializable>> compoundDocumentFileDef = new ArrayList<>();
             entries.forEach(entry -> createEntry(session, finalDoc, zip, entry, compoundFolderType, compoundDocumentFileDef));
             setCompoundDocumentFileDefinitionProp(finalDoc, compoundDocumentFileDef);
-            finalDoc.putContextData(CoreSession.SOURCE, "compound");
-            session.saveDocument(finalDoc);
+            final DocumentModel finalDocWithPreview = runScriptForPreview(COMPOUND_PREVIEW_DETECTION_OPERATION, session, finalDoc,
+                    Map.of());
+            finalDocWithPreview.putContextData(CoreSession.SOURCE, "compound");
+            session.saveDocument(finalDocWithPreview);
             return finalDoc;
         } catch (IOException e) {
             var message = String.format("Failed to create compound document for archive: %s in parent: %s",
@@ -130,6 +133,21 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
     }
 
+    protected DocumentModel runScriptForPreview(String scriptId, CoreSession session, DocumentModel doc, Map<String, ?> params) {
+        AutomationService automationService = Framework.getService(AutomationService.class);
+        try (OperationContext ctx = new OperationContext(session)) {
+            ctx.setInput(doc);
+            var result = (DocumentModel) automationService.run(ctx, scriptId, params);
+            if (result == null) {
+                throw new OperationException("The operation returned null");
+            }
+            return result;
+        } catch (OperationException e) {
+            var message = String.format("Error while running script: %s for input: %s", scriptId, doc);
+            throw new NuxeoException(message, e);
+        }
+    }
+
     protected boolean isAllowedEntry(ZipEntry entry) {
         Path path = new Path(entry.getName());
         IgnoredFilesDescriptor ignoredFiles = getDescriptor(XP_IGNORED_FILES, UNIQUE_DESCRIPTOR_ID);
@@ -166,9 +184,9 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
                 }
                 throw new NuxeoException(message, e);
             }
-            if (FilenameUtils.removeExtension(entry.getName()).equals("preview")) {
-                compoundDoc.setPropertyValue("cp:preview", doc.getId());
-            }
+//            if (FilenameUtils.removeExtension(entry.getName()).equals("preview")) {
+//                compoundDoc.setPropertyValue("cp:preview", doc.getId());
+//            }
 
             Map<String, Serializable> entryFileDef = new HashMap<>();
             entryFileDef.put("latestVersionDocId", session.getLastDocumentVersion(doc.getRef()).getId());

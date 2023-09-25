@@ -35,6 +35,9 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
     private static final Logger log = LogManager.getLogger(CompoundDocumentVersioningListener.class);
     private static final String RESTORED_VERSION_UUID = "RESTORED_VERSION_UUID";
 
+    public static final String STRICT_VERSION_RESTORE_ENABLED =
+            "nuxeo.compound.document.strict.version.restore.enabled";
+
     private DocumentModel document;
 
     private CoreSession coreSession;
@@ -71,6 +74,7 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
     }
 
     protected void handleRestoredEvent(Event event) {
+        String removeDocument = Framework.getProperty(STRICT_VERSION_RESTORE_ENABLED, "false");
         DocumentModel restoringDocument = coreSession
                 .getDocument(new IdRef(event.getContext().getProperty(RESTORED_VERSION_UUID).toString()));
         DocumentModel latestDocument = coreSession.getLastDocumentVersion(document.getRef());
@@ -89,10 +93,12 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
             );
 
             // removing all the version created after the restoring version
-            coreSession.getVersionsForDocument(targetChildDocument.getRef())
-                    .stream()
-                    .filter(doc -> Double.parseDouble(doc.getLabel()) > Double.parseDouble(restoringChildDocument.getVersionLabel()))
-                    .forEach(doc -> coreSession.removeDocument(new IdRef(doc.getId())));
+            if (Boolean.parseBoolean(removeDocument)) {
+                coreSession.getVersionsForDocument(targetChildDocument.getRef())
+                        .stream()
+                        .filter(doc -> Double.parseDouble(doc.getLabel()) > Double.parseDouble(restoringChildDocument.getVersionLabel()))
+                        .forEach(doc -> coreSession.removeDocument(new IdRef(doc.getId())));
+            }
         }
 
     }

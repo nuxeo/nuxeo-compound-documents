@@ -25,5 +25,16 @@
         }
       </script>
     </scriptedOperation>
+    <scriptedOperation id="javascript.GetCompoundDocumentPreview">
+      <inputType>document</inputType>
+      <outputType>document</outputType>
+      <category>javascript</category>
+      <description>Returns the compound document preview based on the given document.</description>
+      <script>
+        function run(input) {
+        return input;
+        }
+      </script>
+    </scriptedOperation>
   </extension>
 </component>
