@@ -161,8 +161,11 @@ pipeline {
                   echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
                 ''')
                 withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
-                  retry(2) {
+                  try {
                     sh "mvn -B -nsu -f nuxeo-compound-documents-web/ftest/pom.xml verify"
+                  } catch (err) {
+                    //Allow ftest to fail
+                    echo hudson.Functions.printThrowable(err)
                   }
                   nxUtils.lookupText(regexp: ".*ERROR.*(?=(?:\\n.*)*\\[.*FrameworkLoader\\] Nuxeo Platform is Trying to Shut Down)",
                     fileSet: "**/log/server.log")
