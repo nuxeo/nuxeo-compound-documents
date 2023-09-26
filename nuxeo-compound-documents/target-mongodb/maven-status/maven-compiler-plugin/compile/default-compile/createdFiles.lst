@@ -1,0 +1,8 @@
+org/nuxeo/compound/documents/CompoundDocumentService.class
+org/nuxeo/compound/documents/IgnoredFileDescriptor.class
+org/nuxeo/compound/documents/IgnoredFilesDescriptor.class
+org/nuxeo/compound/documents/CompoundDocumentArchiveImporter.class
+org/nuxeo/compound/documents/CompoundDocumentBreadcrumbJsonEnricher.class
+org/nuxeo/compound/documents/CompoundDocumentConstants.class
+org/nuxeo/compound/documents/CompoundDocumentThumbnailFactory.class
+org/nuxeo/compound/documents/CompoundDocumentServiceImpl.class
