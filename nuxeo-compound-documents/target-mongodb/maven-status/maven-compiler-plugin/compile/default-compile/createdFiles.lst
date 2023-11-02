@@ -1,0 +1,11 @@
+org/nuxeo/compound/documents/marshallers/CompoundDocumentBreadcrumbJsonEnricher.class
+org/nuxeo/compound/documents/configs/IgnoredFileDescriptor.class
+org/nuxeo/compound/documents/versioning/filters/CompoundDocumentDefaultVersioningFilter.class
+org/nuxeo/compound/documents/constants/CompoundDocumentConstants.class
+org/nuxeo/compound/documents/service/CompoundDocumentServiceImpl.class
+org/nuxeo/compound/documents/thumbnail/CompoundDocumentThumbnailFactory.class
+org/nuxeo/compound/documents/CompoundDocumentArchiveImporter.class
+org/nuxeo/compound/documents/service/CompoundDocumentService.class
+org/nuxeo/compound/documents/versioning/filters/CompoundDocumentChildDefaultVersioningFilter.class
+org/nuxeo/compound/documents/configs/IgnoredFilesDescriptor.class
+org/nuxeo/compound/documents/versioning/events/CompoundDocumentVersioningListener.class
