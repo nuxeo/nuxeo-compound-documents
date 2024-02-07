@@ -170,7 +170,14 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             DocumentModel doc;
             var blob = new ZipEntryBlob(zip, entry);
             blob.setFilename(entryDocName);
-            var ctx = FileImporterContext.builder(session, blob, parentDocPath).build();
+
+            FileImporterContext ctx;
+            List<String> supportedExtensions = new ArrayList<>(List.of("obj","glb"));
+            if (supportedExtensions.contains(new Path(entryDocName).getFileExtension())) {
+                ctx = FileImporterContext.builder(session, blob, parentDocPath).bypassAllowedSubtypeCheck(true).build();
+            } else {
+                ctx = FileImporterContext.builder(session, blob, parentDocPath).build();
+            }
             try {
                 var fileManager = Framework.getService(FileManager.class);
                 doc = fileManager.createOrUpdateDocument(ctx);
