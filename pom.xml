@@ -10,7 +10,7 @@
   <groupId>org.nuxeo.compound.documents</groupId>
   <artifactId>nuxeo-compound-documents-parent</artifactId>
   <name>Nuxeo Compound Documents Parent</name>
-  <version>2023.1-SNAPSHOT</version>
+  <version>2023.2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <description>Nuxeo Compound Documents allow binding several documents as parts of one complex document.</description>
 
