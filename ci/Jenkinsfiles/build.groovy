@@ -17,7 +17,7 @@
 *     Thomas Fowley
 *     Kevin Leturc <kevin.leturc@hyland.com>
 */
-library identifier: "platform-ci-shared-library@v0.0.38"
+library identifier: "platform-ci-shared-library@v0.0.39"
 
 Closure buildUnitTestStage(env) {
   return {
@@ -67,7 +67,6 @@ pipeline {
     VERSION = nxUtils.getVersion()
     NUXEO_COMPOUND_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     TEST_NAMESPACE_PREFIX = "${CURRENT_NAMESPACE}-compound-documents-unit-tests-${BRANCH_NAME}-${BUILD_NUMBER}".toLowerCase()
-    HELMFILE_COMMAND = "helmfile --file ci/helm/helmfile.yaml --helm-binary /usr/bin/helm3"
     HOME = '/root'
   }
   stages {
