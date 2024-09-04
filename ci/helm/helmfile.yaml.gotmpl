@@ -1,3 +1,13 @@
+environments:
+  # Required when running helmfile commands without any environment to not fail during strategicMergePatches resolution.
+  default:
+    values:
+    - labels:
+        usage: "default"
+  mongodbUnitTests:
+    values:
+    - environments/unit-tests-mongodb.yaml
+---
 repositories:
 - name: bitnami
   # use a former version of index.yaml from the git repository as Bitnami all removed charts older than 6 months from
@@ -52,13 +62,3 @@ releases:
   condition: kafka.enabled
   values:
   - values/values-kafka.yaml.gotmpl
-
-environments:
-  # Required when running helmfile commands without any environment to not fail during strategicMergePatches resolution.
-  default:
-    values:
-    - labels:
-        usage: "default"
-  mongodbUnitTests:
-    values:
-    - environments/unit-tests-mongodb.yaml
