@@ -1,0 +1,13 @@
+version: 0.146.0
+dependencies:
+- name: elasticsearch
+  repository: https://helm.elastic.co/
+  version: 7.17.3
+- name: kafka
+  repository: https://raw.githubusercontent.com/bitnami/charts/eb5f9a9513d987b519f0ecd732e7031241c50328/bitnami
+  version: 14.9.3
+- name: mongodb
+  repository: https://raw.githubusercontent.com/bitnami/charts/eb5f9a9513d987b519f0ecd732e7031241c50328/bitnami
+  version: 7.14.2
+digest: sha256:c0f7ea1aae296d15ada5fc687be54807a30225663b6e076f174a26dcbb20bbf4
+generated: "2024-09-04T12:41:54.39269074Z"
