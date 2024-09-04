@@ -1,3 +1,8 @@
+environments:
+  mongodbUnitTests:
+    values:
+    - environments/unit-tests-mongodb.yaml
+---
 repositories:
 - name: bitnami
   # use a specific version of index.yaml from the git repository as Bitnami removes all charts older than 6 months from
@@ -34,8 +39,3 @@ releases:
   condition: kafka.enabled
   values:
   - values/values-kafka.yaml.gotmpl
-
-environments:
-  mongodbUnitTests:
-    values:
-    - environments/unit-tests-mongodb.yaml
