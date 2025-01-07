@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.nuxeo.compound.documents</groupId>
     <artifactId>nuxeo-compound-documents-parent</artifactId>
-    <version>2023.2-SNAPSHOT</version>
+    <version>2025.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -24,10 +24,12 @@
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-server-standalone</artifactId>
+      <version>2.39.0</version>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.distribution</groupId>
       <artifactId>nuxeo-functional-tests</artifactId>
+      <version>2025.0.49</version>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.distribution</groupId>
