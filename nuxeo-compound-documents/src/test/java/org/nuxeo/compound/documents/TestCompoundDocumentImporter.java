@@ -21,14 +21,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
-import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundDocument;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getBadArchive;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getNestedTestArchives;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getPreviewTestArchive;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getTestArchive;
+import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_DOCTYPE_DETECTION_OPERATION;
+import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION;
 
 import java.io.IOException;
 import java.util.zip.ZipException;
@@ -169,7 +169,7 @@ public class TestCompoundDocumentImporter {
         assertTrue(doc.hasFacet(COMPOUND_DOCTYPE));
         var children = session.getChildren(doc.getRef());
         assertEquals(1, children.size());
-        var nested = session.getDocument(children.get(0).getRef());
+        var nested = session.getDocument(children.getFirst().getRef());
         assertCompoundDocument(nested);
     }
 }

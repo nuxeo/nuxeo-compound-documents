@@ -39,28 +39,28 @@ public final class CompoundDocumentUtils {
         // Utility class
     }
 
-    protected static final String COMPOUND_DOCTYPE = "CompoundDocument";
+    static final String COMPOUND_DOCTYPE = "CompoundDocument";
 
-    protected static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
+    static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
 
-    protected static Blob getTestArchive() throws IOException {
+    static Blob getTestArchive() throws IOException {
         File[] sources = new File(
                 CompoundDocumentUtils.class.getResource("/files/defaultCompound").getPath()).listFiles();
         return getArchive("test.zip", sources);
     }
 
-    protected static Blob getNestedTestArchives() throws IOException {
+    static Blob getNestedTestArchives() throws IOException {
         File source = getTestArchive().getFile();
         return getArchive("nest.zip", source);
     }
 
-    protected static Blob getPreviewTestArchive() throws IOException {
+    static Blob getPreviewTestArchive() throws IOException {
         File[] sources = new File(
                 CompoundDocumentUtils.class.getResource("/files/previewCompound").getPath()).listFiles();
         return getArchive("testWithPreview.zip", sources);
     }
 
-    protected static Blob getArchive(String filename, File... sources) throws IOException {
+    private static Blob getArchive(String filename, File... sources) throws IOException {
         File newZip = Framework.createTempFile("test", ".zip");
         ZipUtils.zip(sources, newZip);
         var blob = Blobs.createBlob(newZip);
@@ -68,18 +68,18 @@ public final class CompoundDocumentUtils {
         return blob;
     }
 
-    protected static Blob getBadArchive() throws IOException {
+    static Blob getBadArchive() throws IOException {
         Blob blob = new FileBlob(Framework.createTempFile("test", ".zip"));
         blob.setFilename("test.zip");
         return blob;
     }
 
-    protected static void assertCompoundDocument(DocumentModel doc) {
+    static void assertCompoundDocument(DocumentModel doc) {
         assertCompoundDocument(doc, COMPOUND_DOCTYPE, COMPOUND_FOLDER_DOCTYPE);
     }
 
-    protected static void assertCompoundDocument(DocumentModel doc, String expectedCompoundDocType,
-            String expectedCompoundFolderDocType) {
+    static void assertCompoundDocument(DocumentModel doc, String expectedCompoundDocType,
+                                       String expectedCompoundFolderDocType) {
         CoreSession session = doc.getCoreSession();
         // assert structure
         assertEquals(expectedCompoundDocType, doc.getType());

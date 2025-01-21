@@ -16,7 +16,8 @@
  */
 package org.nuxeo.compound.documents;
 
-import static jakarta.servlet.http.HttpServletResponse.*;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
@@ -25,101 +26,102 @@ import static org.nuxeo.compound.documents.CompoundDocumentUtils.assertCompoundD
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.getTestArchive;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.io.FilenameUtils;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.core.operations.services.FileManagerImport;
-import org.nuxeo.ecm.core.api.*;
+import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.types.SubtypesJsonEnricher;
-import org.nuxeo.ecm.restapi.test.ManagementBaseTest;
+import org.nuxeo.ecm.restapi.test.RestServerFeature;
+import org.nuxeo.http.test.HttpClientTestRule;
 import org.nuxeo.http.test.handler.HttpStatusCodeHandler;
 import org.nuxeo.http.test.handler.JsonNodeHandler;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
-import org.nuxeo.runtime.test.runner.ServletContainerFeature;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** @since 2021.0 */
 @RunWith(FeaturesRunner.class)
-@Features(CompoundDocumentsFeature.class)
+@Features({ RestServerFeature.class, CompoundDocumentsFeature.class })
 @RepositoryConfig(cleanup = Granularity.METHOD)
-public class TestCompoundDocumentRest extends ManagementBaseTest {
-
-    @Inject
-    protected TransactionalFeature txFeature;
+public class TestCompoundDocumentRest {
 
     @Inject
     public CoreSession session;
 
     @Inject
-    protected ServletContainerFeature servletContainerFeature;
+    protected RestServerFeature restServerFeature;
 
-    protected static final ObjectMapper MAPPER = new ObjectMapper();
+    @Rule
+    public final HttpClientTestRule httpClient = HttpClientTestRule.builder()
+                                                                   .url(() -> restServerFeature.getRestApiUrl())
+                                                                   .adminCredentials()
+                                                                   .build();
+
+    @Inject
+    protected TransactionalFeature txFeature;
 
     @Test
     public void testCreateCompoundDocument() {
-        Map<String, Object> queryParams = new HashMap<>();
-        queryParams.put("entity-type", "document");
-        queryParams.put("type", COMPOUND_DOCTYPE);
-        queryParams.put("name", "myCompoundDocument");
+        String payload = """
+                {
+                  "entity-type": "document",
+                  "type": "CompoundDocument",
+                  "name": "myCompoundDocument"
+                }
+                """;
         httpClient.buildPostRequest("path/")
-                .addHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .entity(safeWriteValue(queryParams))
-                .executeAndConsume(new HttpStatusCodeHandler(),
-                        status -> assertEquals(SC_CREATED, status.intValue()));
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .entity(payload)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
         httpClient.buildGetRequest("/path/myCompoundDocument")
-                .addHeaders(headers)
-                .executeAndConsume(new JsonNodeHandler(SC_OK),
-                        node -> assertCompoundResponse(node, Set.of(COMPOUND_DOCTYPE, "Folderish")));
+                  .addHeaders(headers)
+                  .executeAndConsume(new JsonNodeHandler(SC_OK),
+                          node -> assertCompoundResponse(node, Set.of(COMPOUND_DOCTYPE, "Folderish")));
     }
 
     @Test
-    public void testCreateCompoundDocumentFolder() throws IOException {
+    public void testCreateCompoundDocumentFolder() {
         session.createDocument(session.createDocumentModel("/", "myCompoundDocument", COMPOUND_DOCTYPE));
         txFeature.nextTransaction();
-
-        Map<String, Object> queryParams = new HashMap<>();
-        queryParams.put("entity-type", "document");
-        queryParams.put("type", COMPOUND_FOLDER_DOCTYPE);
-        queryParams.put("name", "myCompoundDocumentFolder");
+        String payload = """
+                {
+                  "entity-type": "document",
+                  "type": "CompoundDocumentFolder",
+                  "name": "myCompoundDocumentFolder"
+                }
+                """;
         httpClient.buildPostRequest("/path/myCompoundDocument")
-                .addHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .entity(safeWriteValue(queryParams))
-                .executeAndConsume(new HttpStatusCodeHandler(),
-                        status -> assertEquals(SC_CREATED, status.intValue()));
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .entity(payload)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
 
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
         httpClient.buildGetRequest("/path/myCompoundDocument/myCompoundDocumentFolder")
-                .addHeaders(headers)
-                .executeAndConsume(new JsonNodeHandler(SC_OK),
-                        node -> assertCompoundResponse(node, Set.of("Folderish")));
-    }
-
-    protected String safeWriteValue(Map<String, Object> map) {
-        try {
-            return MAPPER.writeValueAsString(map);
-        } catch (JsonProcessingException e) {
-            throw new NuxeoException("Unable to marshall map: " + map, e);
-        }
+                  .addHeaders(headers)
+                  .executeAndConsume(new JsonNodeHandler(SC_OK),
+                          node -> assertCompoundResponse(node, Set.of("Folderish")));
     }
 
     protected void assertCompoundResponse(JsonNode node, Set<String> expectedFacets) {
-
         JsonNode facets = node.get("facets");
         assertEquals(expectedFacets.size(), facets.size());
         facets.forEach(f -> assertTrue(expectedFacets.contains(f.asText())));
@@ -143,27 +145,27 @@ public class TestCompoundDocumentRest extends ManagementBaseTest {
     }
 
     protected void testCompound(String target) throws IOException {
-        String[] batchId = {""};
+        String[] batchId = { "" };
         httpClient.buildPostRequest("/upload")
-                .executeAndConsume(new JsonNodeHandler(SC_CREATED),
-                        node -> batchId[0] = node.get("batchId").asText());
+                  .executeAndConsume(new JsonNodeHandler(SC_CREATED),
+                          node -> batchId[0] = node.get("batchId").asText());
 
         Blob blob = getTestArchive();
         var fileName = blob.getFilename();
         httpClient.buildPostRequest("/upload/" + batchId[0] + "/0")
-                .accept(MediaType.APPLICATION_JSON)
-                .entity(blob.getStream())
-                .addHeader("X-File-Type", "application/zip")
-                .addHeader("X-File-Name", fileName)
-                .executeAndConsume(new HttpStatusCodeHandler(), status -> assertEquals(SC_CREATED, status.intValue()));
-
+                  .accept(MediaType.APPLICATION_JSON)
+                  .entity(blob.getStream())
+                  .addHeader("X-File-Type", "application/zip")
+                  .addHeader("X-File-Name", fileName)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
         String data = String.format("{ \"context\": { \"currentDocument\": \"%s\" } }", target);
         httpClient.buildPostRequest("/upload/" + batchId[0] + "/execute/" + FileManagerImport.ID)
-                .accept(MediaType.APPLICATION_JSON)
-                .entity(data)
-                .addHeader("Content-Type", MediaType.APPLICATION_JSON)
-                .addHeader("Accept-Encoding", "gzip")
-                .executeAndConsume(new HttpStatusCodeHandler(), status -> assertEquals(SC_OK, status.intValue()));
+                  .accept(MediaType.APPLICATION_JSON)
+                  .entity(data)
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .addHeader("Accept-Encoding", "gzip")
+                  .executeAndConsume(new HttpStatusCodeHandler(), status -> assertEquals(SC_OK, status.intValue()));
 
         txFeature.nextTransaction();
         String docName = FilenameUtils.removeExtension(fileName);

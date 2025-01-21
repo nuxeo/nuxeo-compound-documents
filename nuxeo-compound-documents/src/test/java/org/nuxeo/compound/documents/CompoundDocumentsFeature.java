@@ -16,8 +16,8 @@
  */
 package org.nuxeo.compound.documents;
 
-import org.nuxeo.ecm.platform.picture.core.ImagingFeature;
-import org.nuxeo.ecm.restapi.test.RestServerFeature;
+import org.nuxeo.ecm.platform.filemanager.FileManagerFeature;
+import org.nuxeo.ecm.platform.picture.test.ImagingFeature;
 import org.nuxeo.runtime.test.runner.Deploy;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.RunnerFeature;
@@ -25,8 +25,7 @@ import org.nuxeo.runtime.test.runner.RunnerFeature;
 /**
  * @since 2021.0
  */
-@Features({ ImagingFeature.class, RestServerFeature.class })
-@Deploy("org.nuxeo.ecm.platform.filemanager")
+@Features({FileManagerFeature.class, ImagingFeature.class})
 @Deploy("org.nuxeo.ecm.platform.video:OSGI-INF/core-types-contrib.xml")
 @Deploy("org.nuxeo.ecm.platform.audio.core:OSGI-INF/core-types-contrib.xml")
 @Deploy("org.nuxeo.ecm.platform.thumbnail")

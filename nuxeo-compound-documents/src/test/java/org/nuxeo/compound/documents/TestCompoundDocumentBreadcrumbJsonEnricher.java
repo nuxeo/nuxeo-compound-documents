@@ -16,16 +16,15 @@
  */
 package org.nuxeo.compound.documents;
 
-import static org.nuxeo.compound.documents.marshallers.CompoundDocumentBreadcrumbJsonEnricher.NAME;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_FOLDER_DOCTYPE;
+import static org.nuxeo.compound.documents.marshallers.CompoundDocumentBreadcrumbJsonEnricher.NAME;
 
 import java.io.IOException;
 
 import jakarta.inject.Inject;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.io.marshallers.json.AbstractJsonWriterTest;
@@ -35,10 +34,8 @@ import org.nuxeo.ecm.core.io.registry.context.RenderingContext.CtxBuilder;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.runtime.test.runner.Features;
-import org.nuxeo.runtime.test.runner.FeaturesRunner;
 
 /** @since 2021.0 */
-@RunWith(FeaturesRunner.class)
 @Features(CompoundDocumentsFeature.class)
 @RepositoryConfig(cleanup = Granularity.METHOD)
 public class TestCompoundDocumentBreadcrumbJsonEnricher
