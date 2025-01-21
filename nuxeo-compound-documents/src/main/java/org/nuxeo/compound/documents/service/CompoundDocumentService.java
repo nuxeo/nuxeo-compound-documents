@@ -16,13 +16,13 @@
  */
 package org.nuxeo.compound.documents.service;
 
-import org.nuxeo.ecm.core.api.Blob;
-import org.nuxeo.ecm.core.api.CoreSession;
-import org.nuxeo.ecm.core.api.DocumentModel;
-
 import java.io.Serializable;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentModel;
 
 /** @since 2021.0 */
 public interface CompoundDocumentService {
