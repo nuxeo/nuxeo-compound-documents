@@ -22,7 +22,7 @@ import static org.nuxeo.compound.documents.marshallers.CompoundDocumentBreadcrum
 
 import java.io.IOException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.junit.Test;
 import org.nuxeo.ecm.core.api.CoreSession;

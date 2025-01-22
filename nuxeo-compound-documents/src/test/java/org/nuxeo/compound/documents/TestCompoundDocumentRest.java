@@ -16,8 +16,8 @@
  */
 package org.nuxeo.compound.documents;
 
-import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.nuxeo.compound.documents.CompoundDocumentUtils.COMPOUND_DOCTYPE;
@@ -29,75 +29,97 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.io.FilenameUtils;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nuxeo.ecm.automation.core.operations.services.FileManagerImport;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.io.registry.MarshallingConstants;
 import org.nuxeo.ecm.core.test.annotations.Granularity;
 import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.types.SubtypesJsonEnricher;
-import org.nuxeo.ecm.restapi.test.BaseTest;
-import org.nuxeo.jaxrs.test.CloseableClientResponse;
+import org.nuxeo.ecm.restapi.test.RestServerFeature;
+import org.nuxeo.http.test.HttpClientTestRule;
+import org.nuxeo.http.test.handler.HttpStatusCodeHandler;
+import org.nuxeo.http.test.handler.JsonNodeHandler;
 import org.nuxeo.runtime.test.runner.Features;
 import org.nuxeo.runtime.test.runner.FeaturesRunner;
 import org.nuxeo.runtime.test.runner.TransactionalFeature;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource.Builder;
 
 /** @since 2021.0 */
 @RunWith(FeaturesRunner.class)
-@Features(CompoundDocumentsFeature.class)
+@Features({ RestServerFeature.class, CompoundDocumentsFeature.class })
 @RepositoryConfig(cleanup = Granularity.METHOD)
-public class TestCompoundDocumentRest extends BaseTest {
+public class TestCompoundDocumentRest {
+
+    @Inject
+    public CoreSession session;
+
+    @Inject
+    protected RestServerFeature restServerFeature;
+
+    @Rule
+    public final HttpClientTestRule httpClient = HttpClientTestRule.defaultClient(
+            () -> restServerFeature.getRestApiUrl());
 
     @Inject
     protected TransactionalFeature txFeature;
 
     @Test
-    public void testCreateCompoundDocument() throws IOException {
-        String data = "{\"entity-type\": \"document\",\"type\": \"" + COMPOUND_DOCTYPE
-                + "\", \"name\": \"myCompoundDocument\"}";
-        try (CloseableClientResponse response = getResponse(RequestType.POST, "path/", data)) {
-            assertEquals(SC_CREATED, response.getStatus());
-        }
+    public void testCreateCompoundDocument() {
+        String payload = """
+                {
+                  "entity-type": "document",
+                  "type": "CompoundDocument",
+                  "name": "myCompoundDocument"
+                }
+                """;
+        httpClient.buildPostRequest("path/")
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .entity(payload)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
-        try (CloseableClientResponse response = getResponse(RequestType.GET, "path/myCompoundDocument", headers)) {
-            assertCompoundResponse(response, Set.of(COMPOUND_DOCTYPE, "Folderish"));
-        }
+        httpClient.buildGetRequest("/path/myCompoundDocument")
+                  .addHeaders(headers)
+                  .executeAndConsume(new JsonNodeHandler(SC_OK),
+                          node -> assertCompoundResponse(node, Set.of(COMPOUND_DOCTYPE, "Folderish")));
     }
 
     @Test
-    public void testCreateCompoundDocumentFolder() throws IOException {
+    public void testCreateCompoundDocumentFolder() {
         session.createDocument(session.createDocumentModel("/", "myCompoundDocument", COMPOUND_DOCTYPE));
         txFeature.nextTransaction();
-
-        String data = "{\"entity-type\": \"document\",\"type\": \"" + COMPOUND_FOLDER_DOCTYPE
-                + "\", \"name\": \"myCompoundDocumentFolder\"}";
-        try (CloseableClientResponse response = getResponse(RequestType.POST, "path/myCompoundDocument", data)) {
-            assertEquals(SC_CREATED, response.getStatus());
-        }
+        String payload = """
+                {
+                  "entity-type": "document",
+                  "type": "CompoundDocumentFolder",
+                  "name": "myCompoundDocumentFolder"
+                }
+                """;
+        httpClient.buildPostRequest("/path/myCompoundDocument")
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .entity(payload)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
 
         var headers = Map.of(MarshallingConstants.EMBED_ENRICHERS + ".document", SubtypesJsonEnricher.NAME);
-        try (CloseableClientResponse response = getResponse(RequestType.GET,
-                "path/myCompoundDocument/myCompoundDocumentFolder", headers)) {
-            assertCompoundResponse(response, Set.of("Folderish"));
-        }
+        httpClient.buildGetRequest("/path/myCompoundDocument/myCompoundDocumentFolder")
+                  .addHeaders(headers)
+                  .executeAndConsume(new JsonNodeHandler(SC_OK),
+                          node -> assertCompoundResponse(node, Set.of("Folderish")));
     }
 
-    protected void assertCompoundResponse(CloseableClientResponse response, Set<String> expectedFacets)
-            throws IOException {
-        assertEquals(SC_OK, response.getStatus());
-        JsonNode node = mapper.readTree(response.getEntityInputStream());
+    protected void assertCompoundResponse(JsonNode node, Set<String> expectedFacets) {
         JsonNode facets = node.get("facets");
         assertEquals(expectedFacets.size(), facets.size());
         facets.forEach(f -> assertTrue(expectedFacets.contains(f.asText())));
@@ -121,27 +143,25 @@ public class TestCompoundDocumentRest extends BaseTest {
     }
 
     protected void testCompound(String target) throws IOException {
-        String batchId;
-        try (CloseableClientResponse response = getResponse(RequestType.POST, "upload")) {
-            JsonNode node = mapper.readTree(response.getEntityInputStream());
-            batchId = node.get("batchId").asText();
-        }
+        String batchId = httpClient.buildPostRequest("/upload")
+                                   .executeAndThen(new JsonNodeHandler(SC_CREATED),
+                                           node -> node.get("batchId").asText());
         Blob blob = getTestArchive();
         var fileName = blob.getFilename();
-        Builder builder = service.path("upload/" + batchId + "/0")
-                                 .accept(MediaType.APPLICATION_JSON)
-                                 .header("X-File-Type", "application/zip")
-                                 .header("X-File-Name", fileName);
-
-        try (var in = blob.getStream();
-                CloseableClientResponse response = CloseableClientResponse.of(builder.post(ClientResponse.class, in))) {
-            assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-        }
+        httpClient.buildPostRequest("/upload/" + batchId + "/0")
+                  .accept(MediaType.APPLICATION_JSON)
+                  .entity(blob.getStream())
+                  .addHeader("X-File-Type", "application/zip")
+                  .addHeader("X-File-Name", fileName)
+                  .executeAndConsume(new HttpStatusCodeHandler(),
+                          status -> assertEquals(SC_CREATED, status.intValue()));
         String data = String.format("{ \"context\": { \"currentDocument\": \"%s\" } }", target);
-        try (CloseableClientResponse response = getResponse(RequestType.POST,
-                "upload/" + batchId + "/execute/" + FileManagerImport.ID, data)) {
-            assertEquals(Status.OK.getStatusCode(), response.getStatus());
-        }
+        httpClient.buildPostRequest("/upload/" + batchId + "/execute/" + FileManagerImport.ID)
+                  .accept(MediaType.APPLICATION_JSON)
+                  .entity(data)
+                  .addHeader("Content-Type", MediaType.APPLICATION_JSON)
+                  .addHeader("Accept-Encoding", "gzip")
+                  .executeAndConsume(new HttpStatusCodeHandler(), status -> assertEquals(SC_OK, status.intValue()));
 
         txFeature.nextTransaction();
         String docName = FilenameUtils.removeExtension(fileName);

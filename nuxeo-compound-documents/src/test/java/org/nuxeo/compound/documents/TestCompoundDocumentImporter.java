@@ -33,7 +33,7 @@ import static org.nuxeo.compound.documents.constants.CompoundDocumentConstants.C
 import java.io.IOException;
 import java.util.zip.ZipException;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
