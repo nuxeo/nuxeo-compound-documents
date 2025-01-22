@@ -1,2 +1,4 @@
-fixtures.layouts.page.CompoundDocument = 'nuxeo-document-page';
-fixtures.layouts.page.CompoundDocumentFolder = 'nuxeo-collapsible-document-page';
+Object.assign(fixtures.layouts.page, {
+  CompoundDocument: 'nuxeo-document-page',
+  CompoundDocumentFolder: 'nuxeo-collapsible-document-page',
+});

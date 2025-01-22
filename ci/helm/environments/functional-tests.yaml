@@ -1,13 +1,13 @@
 # enabled conditions
 nuxeo:
-  enabled: false
+  enabled: true
 mongodb:
   enabled: true
 opensearch:
-  enabled: true
+  enabled: false
 kafka:
-  enabled: true
+  enabled: false
 
 # values definition
 labels:
-  usage: utests
+  usage: ftests

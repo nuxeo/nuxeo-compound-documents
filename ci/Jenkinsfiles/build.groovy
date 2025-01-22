@@ -173,25 +173,26 @@ pipeline {
     stage('Run functional tests') {
       steps {
         container('maven') {
-          script {
-            nxWithGitHubStatus(context: "ftests/dev") {
-              echo """
-              ----------------------------------------
-              Run Webdriver functional tests
-              ----------------------------------------"""
-              withCredentials([string(credentialsId: 'instance-clid', variable: 'INSTANCE_CLID')]) {
-                sh(script: '''#!/bin/bash +x
-                  echo -e "$INSTANCE_CLID" >| /tmp/instance.clid
-                ''')
-                withEnv(["TEST_CLID_PATH=/tmp/instance.clid"]) {
-                  try {
-                    sh "mvn -B -nsu -f nuxeo-compound-documents-web/ftest/pom.xml verify"
-                  } catch (err) {
-                    //Allow ftest to fail
-                    echo hudson.Functions.printThrowable(err)
+          nxWithGitHubStatus(context: 'docker/build') {
+            script {
+              sh "mkdir -p ci/docker/target && cp ${NUXEO_COMPOUND_PACKAGE_PATH} ci/docker/target"
+              def nuxeoVersion = sh(returnStdout: true,
+                      script: 'mvn org.apache.maven.plugins:maven-help-plugin:3.3.0:evaluate -Dexpression=nuxeo.platform.version -q -DforceStdout')
+              nxDocker.build(skaffoldFile: 'ci/docker/skaffold.yaml', envVars: ["NUXEO_VERSION=${nuxeoVersion}"])
+            }
+          }
+          nxWithGitHubStatus(context: 'ftests') {
+            script {
+              def testNamespace = "${CURRENT_NAMESPACE}-compound-${BRANCH_NAME}-${BUILD_NUMBER}-ftests".replaceAll('\\.', '-').toLowerCase()
+              def nuxeoParentVersion = readMavenPom().getParent().getVersion()
+              // target connect preprod if nuxeo-parent is a snapshot version or a build version
+              def clidSecret = nuxeoParentVersion.matches("^\\d+\\.\\d+(-SNAPSHOT|\\.\\d+)\$") ? 'instance-clid-preprod' : 'instance-clid'
+              nxWithHelmfileDeployment(namespace: testNamespace, environment: "functionalTests", envVars: ["CONNECT_CLID_SECRET=${clidSecret}"],
+                      secrets: [[name: clidSecret, namespace: 'platform']]) {
+                dir('nuxeo-compound-documents-web') {
+                  retry(3) {
+                    sh "npm run ftest -- --nuxeoUrl=http://nuxeo.${NAMESPACE}.svc.cluster.local/nuxeo"
                   }
-                  nxUtils.lookupText(regexp: ".*ERROR.*(?=(?:\\n.*)*\\[.*FrameworkLoader\\] Nuxeo Platform is Trying to Shut Down)",
-                    fileSet: "**/log/server.log")
                 }
               }
             }
@@ -200,9 +201,9 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: '**/ftest/target/screenshots/**', allowEmptyArchive: true
+          archiveArtifacts artifacts: 'nuxeo-compound-documents-web/ftest/target/screenshots/**', allowEmptyArchive: true
           cucumber(fileIncludePattern: '**/*.json', jsonReportDirectory: 'nuxeo-compound-documents-web/ftest/target/cucumber-reports/',
-              sortingMethod: 'NATURAL')
+                  sortingMethod: 'NATURAL')
         }
       }
     }
