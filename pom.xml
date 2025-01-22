@@ -79,6 +79,20 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <configuration combine.children="append">
+            <ratchetFrom>origin/2023</ratchetFrom>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
   <scm>
     <connection>scm:git:git://github.com/nuxeo/nuxeo-compound-documents.git</connection>
     <developerConnection>scm:git:ssh://git@github.com:nuxeo/nuxeo-compound-documents.git</developerConnection>
