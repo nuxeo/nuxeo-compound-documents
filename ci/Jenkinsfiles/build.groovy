@@ -36,8 +36,6 @@ Closure buildUnitTestStage(env) {
                 sh """
                   mvn -B -nsu -pl :nuxeo-compound-documents \
                     -Dcustom.environment=${env} \
-                    -Dcustom.environment.log.dir=target-${env} \
-                    -Dnuxeo.test.core=${env == 'mongodb' ? 'mongodb' : 'vcs'} \
                     -Pkafka -Dkafka.bootstrap.servers=kafka.${testNamespace}.svc.cluster.local:9092 \
                     test
                 """
@@ -55,7 +53,7 @@ Closure buildUnitTestStage(env) {
 
 pipeline {
   agent {
-    label 'jenkins-nuxeo-package-lts-2023'
+    label 'jenkins-nuxeo-package-lts-2025'
   }
   options {
     buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '60', artifactNumToKeepStr: '5'))
