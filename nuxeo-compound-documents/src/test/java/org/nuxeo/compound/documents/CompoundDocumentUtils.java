@@ -33,15 +33,16 @@ import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.runtime.api.Framework;
 
 /** @since 2021.0 */
+@SuppressWarnings("ProtectedMemberInFinalClass")
 public final class CompoundDocumentUtils {
+
+    static final String COMPOUND_DOCTYPE = "CompoundDocument";
+
+    static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
 
     private CompoundDocumentUtils() {
         // Utility class
     }
-
-    protected static final String COMPOUND_DOCTYPE = "CompoundDocument";
-
-    protected static final String COMPOUND_FOLDER_DOCTYPE = "CompoundDocumentFolder";
 
     protected static Blob getTestArchive() throws IOException {
         File[] sources = new File(
@@ -60,7 +61,7 @@ public final class CompoundDocumentUtils {
         return getArchive("testWithPreview.zip", sources);
     }
 
-    protected static Blob getArchive(String filename, File... sources) throws IOException {
+    private static Blob getArchive(String filename, File... sources) throws IOException {
         File newZip = Framework.createTempFile("test", ".zip");
         ZipUtils.zip(sources, newZip);
         var blob = Blobs.createBlob(newZip);

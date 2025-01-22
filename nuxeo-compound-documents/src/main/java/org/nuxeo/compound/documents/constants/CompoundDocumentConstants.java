@@ -19,10 +19,6 @@ package org.nuxeo.compound.documents.constants;
 /** @since 2021.0 */
 public final class CompoundDocumentConstants {
 
-    private CompoundDocumentConstants() {
-        // Utility class
-    }
-
     public static final String COMPOUND_DOCUMENT_FACET = "CompoundDocument";
 
     public static final String COMPOUND_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentType";
@@ -30,5 +26,9 @@ public final class CompoundDocumentConstants {
     public static final String COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION = "javascript.GetCompoundDocumentFolderType";
 
     public static final String COMPOUND_PREVIEW_DETECTION_OPERATION = "javascript.GetCompoundDocumentPreview";
+
+    private CompoundDocumentConstants() {
+        // Utility class
+    }
 
 }
