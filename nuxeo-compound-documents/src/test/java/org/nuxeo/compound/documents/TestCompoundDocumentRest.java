@@ -120,7 +120,7 @@ public class TestCompoundDocumentRest extends BaseTest {
         testCompound(doc.getPathAsString() + "/");
     }
 
-    protected DocumentModel testCompound(String target) throws IOException {
+    protected void testCompound(String target) throws IOException {
         String batchId;
         try (CloseableClientResponse response = getResponse(RequestType.POST, "upload")) {
             JsonNode node = mapper.readTree(response.getEntityInputStream());
@@ -147,6 +147,5 @@ public class TestCompoundDocumentRest extends BaseTest {
         String docName = FilenameUtils.removeExtension(fileName);
         var compoundDocument = session.getDocument(new PathRef(target + docName));
         assertCompoundDocument(compoundDocument);
-        return compoundDocument;
     }
 }

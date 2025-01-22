@@ -68,7 +68,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             addDirectories(entries);
             entries = entries.stream().sorted(Comparator.comparing(ZipEntry::getName)).collect(Collectors.toList());
             // Avoid giving the whole blobs
-            List<String> entryNames = entries.stream().map(ZipEntry::getName).collect(Collectors.toList());
+            List<String> entryNames = entries.stream().map(ZipEntry::getName).toList();
             String compoundType = runScript(COMPOUND_DOCTYPE_DETECTION_OPERATION, session, parentDoc,
                     Map.of("entries", entryNames));
             DocumentModel compoundDoc = session.createDocumentModel(parent, compoundDocName, compoundType);
@@ -77,10 +77,11 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             String compoundFolderType = runScript(COMPOUND_FOLDER_DOCTYPE_DETECTION_OPERATION, session, finalDoc,
                     Map.of());
             List<Map<String, Serializable>> compoundDocumentFileDef = new ArrayList<>();
-            entries.forEach(entry -> createEntry(session, finalDoc, zip, entry, compoundFolderType, compoundDocumentFileDef));
+            entries.forEach(
+                    entry -> createEntry(session, finalDoc, zip, entry, compoundFolderType, compoundDocumentFileDef));
             setCompoundDocumentFileDefinitionProp(finalDoc, compoundDocumentFileDef);
-            final DocumentModel finalDocWithPreview = runScriptForPreview(COMPOUND_PREVIEW_DETECTION_OPERATION, session, finalDoc,
-                    Map.of());
+            final DocumentModel finalDocWithPreview = runScriptForPreview(COMPOUND_PREVIEW_DETECTION_OPERATION, session,
+                    finalDoc, Map.of());
             finalDocWithPreview.putContextData(CoreSession.SOURCE, "compound");
             session.saveDocument(finalDocWithPreview);
             return finalDoc;
@@ -97,7 +98,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         entries.forEach(entry -> content.add(entry.getName()));
         for (ZipEntry file : entries) {
             String[] segments = new Path(file.getName()).segments();
-            for(String segment : segments) {
+            for (String segment : segments) {
                 if (new Path(segment).getFileExtension() == null && content.add(segment + "/")) {
                     directories.add(new ZipEntry(segment + "/"));
                 }
@@ -134,7 +135,8 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
     }
 
-    protected DocumentModel runScriptForPreview(String scriptId, CoreSession session, DocumentModel doc, Map<String, ?> params) {
+    protected DocumentModel runScriptForPreview(String scriptId, CoreSession session, DocumentModel doc,
+            Map<String, ?> params) {
         AutomationService automationService = Framework.getService(AutomationService.class);
         try (OperationContext ctx = new OperationContext(session)) {
             ctx.setInput(doc);
@@ -172,7 +174,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             blob.setFilename(entryDocName);
 
             FileImporterContext ctx;
-            List<String> supportedExtensions = new ArrayList<>(List.of("obj","glb"));
+            List<String> supportedExtensions = new ArrayList<>(List.of("obj", "glb"));
             if (supportedExtensions.contains(new Path(entryDocName).getFileExtension())) {
                 ctx = FileImporterContext.builder(session, blob, parentDocPath).bypassAllowedSubtypeCheck(true).build();
             } else {
@@ -186,26 +188,21 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             } catch (NuxeoException | IOException e) {
                 String message = String.format("Failed to create document for entry: %s in: %s for archive: %s",
                         entry.getName(), compoundDoc, zip.getName());
-                if (e instanceof NuxeoException) {
-                    NuxeoException ne = (NuxeoException) e;
+                if (e instanceof NuxeoException ne) {
                     ne.addInfo(message);
                     throw ne;
                 }
                 throw new NuxeoException(message, e);
             }
-//            if (FilenameUtils.removeExtension(entry.getName()).equals("preview")) {
-//                compoundDoc.setPropertyValue("cp:preview", doc.getId());
-//            }
 
             Map<String, Serializable> entryFileDef = new HashMap<>();
             entryFileDef.put("latestVersionDocId", session.getLastDocumentVersion(doc.getRef()).getId());
-            entryFileDef.put("latestVersion", doc.getPath().removeFirstSegments(compoundDoc.getPath().segmentCount() - 1).toString() + " - Version " + doc.getVersionLabel());
+            entryFileDef.put("latestVersion",
+                    doc.getPath().removeFirstSegments(compoundDoc.getPath().segmentCount() - 1).toString()
+                            + " - Version " + doc.getVersionLabel());
             entryFileDef.put("filepath", doc.getPathAsString());
             compoundDocumentFileDef.add(entryFileDef);
 
-
-//            addCompoundDocumentFileDefinition(compoundDoc, session.getLastDocumentVersion(doc.getRef()).getId(), doc.getVersionLabel(), doc.getPathAsString(), doc.getPath().removeFirstSegments(compoundDoc.getPath().segmentCount() - 1).toString());
-//            session.saveDocument(compoundDoc);
         }
     }
 
@@ -213,21 +210,6 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     public List<Map<String, Serializable>> getCompoundDocumentFileDefinitionProp(DocumentModel compoundDoc) {
         return (List<Map<String, Serializable>>) compoundDoc.getPropertyValue("cp:files");
     }
-
-//    public void addCompoundDocumentFileDefinitions(DocumentModel compoundDoc, String uid, String version, String filepath, String relativePath) {
-//        List<Map<String, Serializable>> cpf = getCompoundDocumentFileDefinitionProp(compoundDoc);
-//        if (cpf == null) {
-//            cpf = new ArrayList<>();
-//        }
-//
-//        Map<String, Serializable> file = new HashMap<>();
-//        file.put("latestVersionDocId", uid);
-//        file.put("latestVersion", relativePath + " - " + version);
-//        file.put("filepath", filepath);
-//
-//        cpf.add(file);
-//        setCompoundDocumentFileDefinitionProp(compoundDoc, cpf);
-//    }
 
     public void setCompoundDocumentFileDefinitionProp(DocumentModel compoundDoc, List<Map<String, Serializable>> cpf) {
         compoundDoc.setPropertyValue("cp:files", (Serializable) cpf);
@@ -247,14 +229,13 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
     }
 
     @Override
-    public void updateFileDefinition(DocumentModel compoundDoc, int index, Consumer<Map<String, Serializable>> consumer) {
+    public void updateFileDefinition(DocumentModel compoundDoc, int index,
+            Consumer<Map<String, Serializable>> consumer) {
         List<Map<String, Serializable>> cpf = getCompoundDocumentFileDefinitionProp(compoundDoc);
 
         consumer.accept(cpf.get(index));
 
         setCompoundDocumentFileDefinitionProp(compoundDoc, cpf);
     }
-
-
 
 }

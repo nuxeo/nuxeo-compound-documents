@@ -1,4 +1,31 @@
+/*
+ * (C) Copyright 2025 Nuxeo (http://nuxeo.com/) and others.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package org.nuxeo.compound.documents.versioning.events;
+
+import static org.nuxeo.ecm.core.api.event.DocumentEventTypes.DOCUMENT_CHECKEDIN;
+import static org.nuxeo.ecm.core.api.event.DocumentEventTypes.DOCUMENT_RESTORED;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,24 +41,13 @@ import org.nuxeo.ecm.core.event.PostCommitEventListener;
 import org.nuxeo.ecm.core.event.impl.DocumentEventContext;
 import org.nuxeo.runtime.api.Framework;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+public class CompoundDocumentVersioningListener implements PostCommitEventListener {
 
-import static org.nuxeo.ecm.core.api.event.DocumentEventTypes.DOCUMENT_CHECKEDIN;
-import static org.nuxeo.ecm.core.api.event.DocumentEventTypes.DOCUMENT_RESTORED;
-
-public class CompoundDocumentVersioningListener implements PostCommitEventListener{
+    public static final String STRICT_VERSION_RESTORE_ENABLED = "nuxeo.compound.document.strict.version.restore.enabled";
 
     private static final Logger log = LogManager.getLogger(CompoundDocumentVersioningListener.class);
-    private static final String RESTORED_VERSION_UUID = "RESTORED_VERSION_UUID";
 
-    public static final String STRICT_VERSION_RESTORE_ENABLED =
-            "nuxeo.compound.document.strict.version.restore.enabled";
+    private static final String RESTORED_VERSION_UUID = "RESTORED_VERSION_UUID";
 
     private DocumentModel document;
 
@@ -48,18 +64,18 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
         for (Event event : eventBundle) {
             if (acceptEvent(event)) {
                 EventContext ctx = event.getContext();
-                if (ctx instanceof DocumentEventContext) {
-                    DocumentEventContext docCtx = (DocumentEventContext) ctx;
+                if (ctx instanceof DocumentEventContext docCtx) {
                     document = docCtx.getSourceDocument();
                     coreSession = docCtx.getCoreSession();
                     List<DocumentModel> parents = coreSession.getParentDocuments(document.getRef());
                     Collections.reverse(parents);
                     parentCompoundDoc = parents.stream()
-                            .filter(parent -> parent.hasFacet("CompoundDocument"))
-                            .filter(parent -> !parent.getId().equals(document.getId()))
-                            .findFirst();
+                                               .filter(parent -> parent.hasFacet("CompoundDocument"))
+                                               .filter(parent -> !parent.getId().equals(document.getId()))
+                                               .findFirst();
                 }
-                if (DOCUMENT_CHECKEDIN.equals(event.getName()) && parentCompoundDoc.isPresent()  && !document.getVersionLabel().equals("0.1")) {
+                if (DOCUMENT_CHECKEDIN.equals(event.getName()) && parentCompoundDoc.isPresent()
+                        && !document.getVersionLabel().equals("0.1")) {
                     handleCheckedInEvent();
                 } else if (DOCUMENT_RESTORED.equals(event.getName()) && document.hasFacet("CompoundDocument")) {
                     handleRestoredEvent(event);
@@ -70,8 +86,8 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
 
     protected void handleRestoredEvent(Event event) {
         String removeDocument = Framework.getProperty(STRICT_VERSION_RESTORE_ENABLED, "false");
-        DocumentModel restoringDocument = coreSession
-                .getDocument(new IdRef(event.getContext().getProperty(RESTORED_VERSION_UUID).toString()));
+        DocumentModel restoringDocument = coreSession.getDocument(
+                new IdRef(event.getContext().getProperty(RESTORED_VERSION_UUID).toString()));
         DocumentModel latestDocument = coreSession.getLastDocumentVersion(document.getRef());
         List<String> diffChildren = findDiffChildren(latestDocument, restoringDocument);
 
@@ -79,20 +95,16 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
             DocumentModel targetChildDocument = coreSession.getSourceDocument(new IdRef(restoringChildId));
             DocumentModel restoringChildDocument = coreSession.getDocument(new IdRef(restoringChildId));
 
-            //restoring to the older version as per parent
-            coreSession.restoreToVersion(
-                    targetChildDocument.getRef(),
-                    restoringChildDocument.getRef(),
-                    true,
-                    true
-            );
+            // restoring to the older version as per parent
+            coreSession.restoreToVersion(targetChildDocument.getRef(), restoringChildDocument.getRef(), true, true);
 
             // removing all the version created after the restoring version
             if (Boolean.parseBoolean(removeDocument)) {
                 coreSession.getVersionsForDocument(targetChildDocument.getRef())
-                        .stream()
-                        .filter(doc -> Double.parseDouble(doc.getLabel()) > Double.parseDouble(restoringChildDocument.getVersionLabel()))
-                        .forEach(doc -> coreSession.removeDocument(new IdRef(doc.getId())));
+                           .stream()
+                           .filter(doc -> Double.parseDouble(doc.getLabel()) > Double.parseDouble(
+                                   restoringChildDocument.getVersionLabel()))
+                           .forEach(doc -> coreSession.removeDocument(new IdRef(doc.getId())));
             }
         }
 
@@ -100,12 +112,16 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
 
     private List<String> findDiffChildren(DocumentModel document, DocumentModel restoringDocument) {
 
-        List<Map<String, Serializable>> documentChildren = (List<Map<String, Serializable>>) document.getPropertyValue("cp:files");
-        List<Map<String, Serializable>> restoringDocumentChildren = (List<Map<String, Serializable>>) restoringDocument.getPropertyValue("cp:files");
+        List<Map<String, Serializable>> documentChildren = (List<Map<String, Serializable>>) document.getPropertyValue(
+                "cp:files");
+        List<Map<String, Serializable>> restoringDocumentChildren = (List<Map<String, Serializable>>) restoringDocument.getPropertyValue(
+                "cp:files");
         List<String> diffChildren = new ArrayList<>();
 
         for (int i = 0; i < documentChildren.size(); i++) {
-            if (!documentChildren.get(i).get("latestVersionDocId").equals(restoringDocumentChildren.get(i).get("latestVersionDocId"))) {
+            if (!documentChildren.get(i)
+                                 .get("latestVersionDocId")
+                                 .equals(restoringDocumentChildren.get(i).get("latestVersionDocId"))) {
                 diffChildren.add(restoringDocumentChildren.get(i).get("latestVersionDocId").toString());
             }
         }
@@ -120,15 +136,19 @@ public class CompoundDocumentVersioningListener implements PostCommitEventListen
         } else {
             return;
         }
-        Optional<VersionModel> latestVersion = coreSession.
-                getVersionsForDocument(document.getRef()).stream().max(Comparator.comparing(VersionModel::getCreated));
+        Optional<VersionModel> latestVersion = coreSession.getVersionsForDocument(document.getRef())
+                                                          .stream()
+                                                          .max(Comparator.comparing(VersionModel::getCreated));
 
         CompoundDocumentService compoundDocumentService = Framework.getService(CompoundDocumentService.class);
-        compoundDocumentService.updateFileDefinition(parent, compoundDocumentService.getFileIndexBy(parent, document.getPathAsString()), file -> {
-            file.put("latestVersionDocId", latestVersion.get().getId());
-            file.put("latestVersion", document.getPath().removeFirstSegments(parent.getPath().segmentCount() - 1).toString() + " - Version " + latestVersion.get().getLabel());
-            file.put("filepath", document.getPathAsString());
-        });
+        compoundDocumentService.updateFileDefinition(parent,
+                compoundDocumentService.getFileIndexBy(parent, document.getPathAsString()), file -> {
+                    file.put("latestVersionDocId", latestVersion.get().getId());
+                    file.put("latestVersion",
+                            document.getPath().removeFirstSegments(parent.getPath().segmentCount() - 1).toString()
+                                    + " - Version " + latestVersion.get().getLabel());
+                    file.put("filepath", document.getPathAsString());
+                });
         coreSession.saveDocument(parent);
     }
 
