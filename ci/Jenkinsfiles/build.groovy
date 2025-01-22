@@ -88,23 +88,49 @@ pipeline {
         }
       }
     }
-    stage('Compile') {
-      steps {
-        container('maven') {
-          nxWithGitHubStatus(context: 'compile') {
-            echo """
-            ----------------------------------------
-            Compile
-            ----------------------------------------"""
-            echo "MAVEN_OPTS=$MAVEN_OPTS"
-            sh 'mvn -B -nsu -T4C install -DskipTests'
+    stage('Build') {
+      parallel {
+        stage('Compile') {
+          steps {
+            container('maven') {
+              nxWithGitHubStatus(context: 'compile') {
+                echo """
+                ----------------------------------------
+                Compile
+                ----------------------------------------"""
+                echo "MAVEN_OPTS=$MAVEN_OPTS"
+                sh 'mvn -B -nsu -T4C install -DskipTests'
+              }
+            }
+          }
+          post {
+            success {
+              archiveArtifacts artifacts: '**/target/*.jar, **/target/nuxeo-*-package-*.zip'
+              junit testResults: '**/target/surefire-reports/*.xml, **/target/failsafe-reports/*.xml', allowEmptyResults: true
+            }
           }
         }
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: '**/target/*.jar, **/target/nuxeo-*-package-*.zip'
-          junit testResults: '**/target/surefire-reports/*.xml, **/target/failsafe-reports/*.xml', allowEmptyResults: true
+        stage('Formatting check') {
+          when {
+            // if current version is higher than default branch (aka: version in maintenance) run formatting check
+            expression { nxGitHub.getReferenceBranch().compareToIgnoreCase(nxGitHub.getDefaultBranch()) > 0 }
+          }
+          steps {
+            container('maven') {
+              warnError(message: 'Formatting check has failed') {
+                nxWithGitHubStatus(context: 'maven/lint', message: 'Lint') {
+                  script {
+                    echo """
+                    ----------------------------------------
+                    Check formatting
+                    ----------------------------------------"""
+                    sh "git fetch origin 2023:origin/2023"
+                    sh "mvn -B -nsu -V -Dcustom.environment=spotless spotless:check"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
