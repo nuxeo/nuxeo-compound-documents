@@ -29,8 +29,16 @@ public interface CompoundDocumentService {
 
     DocumentModel createCompoundDocument(CoreSession session, String parent, Blob archive);
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
+    @Deprecated(since = "2025.0", forRemoval = true)
     int getFileIndexBy(DocumentModel compoundDoc, String filepath);
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
+    @Deprecated(since = "2025.0", forRemoval = true)
     void updateFileDefinition(DocumentModel compoundDoc, int index, Consumer<Map<String, Serializable>> consumer);
 
 }

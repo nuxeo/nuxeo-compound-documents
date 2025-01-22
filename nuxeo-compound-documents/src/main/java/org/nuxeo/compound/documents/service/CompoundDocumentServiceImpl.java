@@ -38,6 +38,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FilenameUtils;
 import org.nuxeo.common.utils.Path;
+import org.nuxeo.compound.documents.adapters.CompoundDocument;
 import org.nuxeo.compound.documents.configs.IgnoredFilesDescriptor;
 import org.nuxeo.ecm.automation.AutomationService;
 import org.nuxeo.ecm.automation.OperationContext;
@@ -79,8 +80,9 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             List<Map<String, Serializable>> compoundDocumentFileDef = new ArrayList<>();
             entries.forEach(
                     entry -> createEntry(session, finalDoc, zip, entry, compoundFolderType, compoundDocumentFileDef));
-            setCompoundDocumentFileDefinitionProp(finalDoc, compoundDocumentFileDef);
-            final DocumentModel finalDocWithPreview = runScriptForPreview(COMPOUND_PREVIEW_DETECTION_OPERATION, session,
+            compoundDoc.getAdapter(CompoundDocument.class)
+                       .setCompoundDocumentFileDefinitionProp(compoundDocumentFileDef);
+            final DocumentModel finalDocWithPreview = runScriptForPreview(session,
                     finalDoc, Map.of());
             finalDocWithPreview.putContextData(CoreSession.SOURCE, "compound");
             session.saveDocument(finalDocWithPreview);
@@ -92,7 +94,7 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
     }
 
-    private List<ZipEntry> addDirectories(List<ZipEntry> entries) {
+    private void addDirectories(List<ZipEntry> entries) {
         List<ZipEntry> directories = new ArrayList<>();
         Set<String> content = new HashSet<>();
         entries.forEach(entry -> content.add(entry.getName()));
@@ -105,7 +107,6 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
             }
         }
         entries.addAll(directories);
-        return entries;
     }
 
     protected File getFile(Blob archive) {
@@ -135,18 +136,18 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
     }
 
-    protected DocumentModel runScriptForPreview(String scriptId, CoreSession session, DocumentModel doc,
+    protected DocumentModel runScriptForPreview(CoreSession session, DocumentModel doc,
             Map<String, ?> params) {
         AutomationService automationService = Framework.getService(AutomationService.class);
         try (OperationContext ctx = new OperationContext(session)) {
             ctx.setInput(doc);
-            var result = (DocumentModel) automationService.run(ctx, scriptId, params);
+            var result = (DocumentModel) automationService.run(ctx, COMPOUND_PREVIEW_DETECTION_OPERATION, params);
             if (result == null) {
                 throw new OperationException("The operation returned null");
             }
             return result;
         } catch (OperationException e) {
-            var message = String.format("Error while running script: %s for input: %s", scriptId, doc);
+            var message = String.format("Error while running script: %s for input: %s", COMPOUND_PREVIEW_DETECTION_OPERATION, doc);
             throw new NuxeoException(message, e);
         }
     }
@@ -206,16 +207,28 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         }
     }
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
     @SuppressWarnings("unchecked")
+    @Deprecated(since = "2025.0", forRemoval = true)
     public List<Map<String, Serializable>> getCompoundDocumentFileDefinitionProp(DocumentModel compoundDoc) {
         return (List<Map<String, Serializable>>) compoundDoc.getPropertyValue("cp:files");
     }
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
+    @Deprecated(since = "2025.0", forRemoval = true)
     public void setCompoundDocumentFileDefinitionProp(DocumentModel compoundDoc, List<Map<String, Serializable>> cpf) {
         compoundDoc.setPropertyValue("cp:files", (Serializable) cpf);
     }
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
     @Override
+    @Deprecated(since = "2025.0", forRemoval = true)
     public int getFileIndexBy(DocumentModel compoundDoc, String filepath) {
         List<Map<String, Serializable>> cpf = getCompoundDocumentFileDefinitionProp(compoundDoc);
         for (int index = 0; index < cpf.size(); index++) {
@@ -228,7 +241,11 @@ public class CompoundDocumentServiceImpl extends DefaultComponent implements Com
         return -1;
     }
 
+    /**
+     * @deprecated since 2025.0, use {@link org.nuxeo.compound.documents.adapters.CompoundDocument} instead
+     */
     @Override
+    @Deprecated(since = "2025.0", forRemoval = true)
     public void updateFileDefinition(DocumentModel compoundDoc, int index,
             Consumer<Map<String, Serializable>> consumer) {
         List<Map<String, Serializable>> cpf = getCompoundDocumentFileDefinitionProp(compoundDoc);

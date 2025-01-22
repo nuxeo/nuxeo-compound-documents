@@ -4,6 +4,7 @@ Bundle-Name: Nuxeo Compound Documents
 Bundle-SymbolicName: org.nuxeo.compound.documents;singleton:=true
 Bundle-Vendor: Nuxeo
 Nuxeo-Component: OSGI-INF/core-types-contrib.xml,
+ OSGI-INF/compound-adapters.xml,
  OSGI-INF/filemanager-contrib.xml,
  OSGI-INF/service-contrib.xml,
  OSGI-INF/operations-contrib.xml,
