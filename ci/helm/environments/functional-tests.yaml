@@ -4,7 +4,7 @@ nuxeo:
 mongodb:
   enabled: true
 opensearch:
-  enabled: false
+  enabled: true
 kafka:
   enabled: false
 
