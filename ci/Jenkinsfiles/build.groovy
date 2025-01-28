@@ -121,7 +121,7 @@ pipeline {
                     ----------------------------------------
                     Check formatting
                     ----------------------------------------"""
-                    sh "git fetch origin 2023:origin/2025"
+                    sh "git fetch origin 2025:origin/2025"
                     sh "mvn -B -nsu -V -Dcustom.environment=spotless spotless:check"
                   }
                 }
