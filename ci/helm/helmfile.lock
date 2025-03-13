@@ -1,0 +1,16 @@
+version: 0.167.1
+dependencies:
+- name: kafka
+  repository: https://raw.githubusercontent.com/bitnami/charts/d2a3b454f8bb808a493d417199d3e2e09b5c650c/bitnami
+  version: 19.1.3
+- name: mongodb
+  repository: https://raw.githubusercontent.com/bitnami/charts/d2a3b454f8bb808a493d417199d3e2e09b5c650c/bitnami
+  version: 13.3.1
+- name: nuxeo
+  repository: https://packages.nuxeo.com/repository/helm-releases-public/
+  version: 3.1.11
+- name: opensearch
+  repository: https://opensearch-project.github.io/helm-charts/
+  version: 1.16.0
+digest: sha256:6ed2e3d6527ef72aeb6d51b5d7e708a98e41e6d6633ef2cdf108851a1b1076a6
+generated: "2025-03-13T17:01:54.101676341Z"
