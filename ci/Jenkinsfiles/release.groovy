@@ -1,5 +1,5 @@
 /*
-* (C) Copyright 2023 Nuxeo (http://nuxeo.com/) and others.
+* (C) Copyright 2023-2025 Nuxeo (http://nuxeo.com/) and others.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-library identifier: "platform-ci-shared-library@v0.0.39"
+library identifier: "platform-ci-shared-library@v0.0.47"
 
 pipeline {
   agent {
@@ -33,7 +33,9 @@ pipeline {
   environment {
     BRANCH_NAME = "${params.BRANCH}"
     BUILD_VERSION = "${params.BUILD_VERSION}"
-    JIRA_NUXEO_ADDON_MOVING_VERSION = 'compound-2021.x'
+    JIRA_PROJECT = 'NXP'
+    JIRA_MOVING_VERSION = 'compound-2021.x'
+    JIRA_RELEASED_VERSION = "compound-${VERSION}"
     VERSION = "${nxUtils.getMajorDotMinorVersion(version: env.BUILD_VERSION)}"
   }
   stages {
@@ -91,28 +93,23 @@ pipeline {
         }
       }
     }
-    stage('Release Jira version') {
+    stage('Release Project') {
       steps {
         container('maven') {
           script {
-            def jiraVersionName = "compound-${VERSION}"
-            // create a new released version in Jira
-            def jiraVersion = [
-                project: 'NXP',
-                name: jiraVersionName,
-                description: "Compound Documents Addon ${VERSION}",
-                releaseDate: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-                released: true,
+            def jiraIssueFetchers = [
+                type                 : 'jira',
+                jql                  : "project = ${JIRA_PROJECT} and fixVersion = ${JIRA_MOVING_VERSION}",
+                newJiraVersion       : [
+                    project    : env.JIRA_PROJECT,
+                    name       : env.JIRA_RELEASED_VERSION,
+                    description: "Compound Documents Addon ${VERSION}",
+                    releaseDate: LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                    released   : true,
+                ],
+                jiraMovingVersionName: env.JIRA_MOVING_VERSION,
             ]
-            nxJira.newVersion(version: jiraVersion)
-            // find Jira tickets included in this release and update them
-            def jiraTickets = nxJira.jqlSearch(jql: "project = NXP and fixVersion = ${JIRA_NUXEO_ADDON_MOVING_VERSION}")
-            def previousVersion = nxUtils.getPreviousMajorDotMinorVersion()
-            def changelog = nxGit.getChangeLog(previousVersion: previousVersion, version: env.VERSION)
-            def committedIssues = jiraTickets.data.issues.findAll { changelog.contains(it.key) }
-            committedIssues.each {
-              nxJira.editIssueFixVersion(idOrKey: it.key, fixVersionToRemove: env.JIRA_NUXEO_ADDON_MOVING_VERSION, fixVersionToAdd: jiraVersionName)
-            }
+            nxProject.release(issuesFetchers: [jiraIssueFetchers], previousVersion: nxUtils.getPreviousMajorDotMinorVersion())
           }
         }
       }
