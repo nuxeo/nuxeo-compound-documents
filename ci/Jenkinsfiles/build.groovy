@@ -17,7 +17,7 @@
 *     Thomas Fowley
 *     Kevin Leturc <kevin.leturc@hyland.com>
 */
-library identifier: "platform-ci-shared-library@v0.0.49"
+library identifier: "platform-ci-shared-library@v0.0.53"
 
 Closure buildUnitTestStage(env) {
   return {
