@@ -1,0 +1,11 @@
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/service/CompoundDocumentService.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/versioning/filters/CompoundDocumentChildDefaultVersioningFilter.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/versioning/events/CompoundDocumentVersioningListener.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/constants/CompoundDocumentConstants.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/configs/IgnoredFilesDescriptor.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/thumbnail/CompoundDocumentThumbnailFactory.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/versioning/filters/CompoundDocumentDefaultVersioningFilter.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/configs/IgnoredFileDescriptor.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/service/CompoundDocumentServiceImpl.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/CompoundDocumentArchiveImporter.java
+/home/jenkins/workspace/ts_nuxeo-compound-documents_2023/nuxeo-compound-documents/src/main/java/org/nuxeo/compound/documents/marshallers/CompoundDocumentBreadcrumbJsonEnricher.java
