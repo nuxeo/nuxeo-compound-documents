@@ -31,6 +31,7 @@ bin
 # build artifacts
 target/
 nashorn_code_cache/
+node/
 node_modules/
 chromedriver.log
 package-lock.json
