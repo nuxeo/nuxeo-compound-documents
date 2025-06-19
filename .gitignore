@@ -25,6 +25,9 @@ bin
 .pydevproject
 .factorypath
 
+# node
+.nprmrc
+
 # build artifacts
 target/
 nashorn_code_cache/
