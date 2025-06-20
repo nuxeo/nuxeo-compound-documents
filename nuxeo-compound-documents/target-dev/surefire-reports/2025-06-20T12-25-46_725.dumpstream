@@ -1,0 +1,3 @@
+# Created at 2025-06-20T12:25:47.047
+Picked up JAVA_TOOL_OPTIONS: -Dsun.zip.disableMemoryMapping=true -XX:+UseG1GC
+
