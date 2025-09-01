@@ -10,4 +10,12 @@ LABEL org.nuxeo.compound.documents.build-tag=$BUILD_TAG
 LABEL org.nuxeo.compound.documents.scm-ref=$SCM_REF
 LABEL org.nuxeo.compound.documents.version=$VERSION
 
-COPY --chown=900:0 target/nuxeo-compound-documents-package-$VERSION.zip /packages/
+RUN --mount=type=secret,id=CLID,env=CLID \
+    --mount=type=secret,id=CONNECT_URL,env=CONNECT_URL \
+    /install-packages.sh --clid ${CLID} --connect-url ${CONNECT_URL} \
+      nuxeo-opensearch1-embed \
+      nuxeo-search-client-opensearch1 \
+      nuxeo-web-ui
+
+RUN --mount=type=bind,source=./target,target=/tmp/local-packages  \
+    /install-packages.sh --offline /tmp/local-packages/*.zip

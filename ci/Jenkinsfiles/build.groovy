@@ -63,6 +63,7 @@ pipeline {
   environment {
     CURRENT_NAMESPACE = nxK8s.getCurrentNamespace()
     MAVEN_CLI_ARGS = "-B -V -nsu -Dnuxeo.skip.enforcer=true -Prelease"
+    NUXEO_VERSION = nxMvn.getProperty(key: 'project.parent.version')
     VERSION = nxUtils.getVersion()
     NUXEO_COMPOUND_PACKAGE_PATH = "nuxeo-compound-documents-package/target/nuxeo-compound-documents-package-${VERSION}.zip"
     TEST_NAMESPACE_PREFIX = "${CURRENT_NAMESPACE}-compound-documents-unit-tests-${BRANCH_NAME}-${BUILD_NUMBER}".toLowerCase()
@@ -195,20 +196,22 @@ pipeline {
     stage('Run functional tests') {
       steps {
         container('maven') {
-          nxWithGitHubStatus(context: 'docker/build') {
-            script {
+          script {
+            // target connect preprod if nuxeo-parent is a snapshot version or a build version
+            def clidSecret = env.NUXEO_VERSION.matches("^\\d+\\.\\d+(-SNAPSHOT|\\.\\d+)\$") ? 'instance-clid-preprod' : 'instance-clid'
+            def clid = nxK8s.getSecretData(namespace: 'platform', name: clidSecret, key: 'instance\\.clid')
+            def connectUrl = clidSecret.contains('preprod') ? CONNECT_PREPROD_SITE_URL : CONNECT_PROD_SITE_URL
+
+            nxWithGitHubStatus(context: 'docker/build') {
               sh "mkdir -p ci/docker/target && cp ${NUXEO_COMPOUND_PACKAGE_PATH} ci/docker/target"
-              def nuxeoVersion = sh(returnStdout: true,
-                      script: 'mvn org.apache.maven.plugins:maven-help-plugin:3.3.0:evaluate -Dexpression=nuxeo.platform.version -q -DforceStdout')
-              nxDocker.build(skaffoldFile: 'ci/docker/skaffold.yaml', envVars: ["NUXEO_VERSION=${nuxeoVersion}"])
+              def nuxeoVersion = nxMvn.getProperty(key: 'nuxeo.platform.version')
+              // use withEnv for clid to not print it to the console, which nxDocker does
+              withEnv(["CLID=${clid}"]) {
+                nxDocker.build(skaffoldFile: 'ci/docker/skaffold.yaml', envVars: ["CONNECT_URL=${connectUrl}", "NUXEO_VERSION=${nuxeoVersion}"])
+              }
             }
-          }
-          nxWithGitHubStatus(context: 'ftests') {
-            script {
+            nxWithGitHubStatus(context: 'ftests') {
               def testNamespace = "${CURRENT_NAMESPACE}-compound-${BRANCH_NAME}-${BUILD_NUMBER}-ftests".replaceAll('\\.', '-').toLowerCase()
-              def nuxeoParentVersion = readMavenPom().getParent().getVersion()
-              // target connect preprod if nuxeo-parent is a snapshot version or a build version
-              def clidSecret = nuxeoParentVersion.matches("^\\d+\\.\\d+(-SNAPSHOT|\\.\\d+)\$") ? 'instance-clid-preprod' : 'instance-clid'
               nxWithHelmfileDeployment(namespace: testNamespace, environment: "functionalTests", envVars: ["CONNECT_CLID_SECRET=${clidSecret}"],
                       secrets: [[name: clidSecret, namespace: 'platform']]) {
                 dir('nuxeo-compound-documents-web') {
