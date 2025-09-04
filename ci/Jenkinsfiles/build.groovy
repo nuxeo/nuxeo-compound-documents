@@ -25,7 +25,7 @@ Closure buildUnitTestStage(env) {
       nxWithGitHubStatus(context: "utests/backend/${env}") {
         script {
           def testNamespace = "${CURRENT_NAMESPACE}-compound-${BRANCH_NAME}-${BUILD_NUMBER}-${env}".replaceAll('\\.', '-').toLowerCase()
-          nxWithHelmfileDeployment(namespace: testNamespace, environment: "${env}UnitTests") {
+          nxWithHelmfileDeployment(namespace: testNamespace, environment: "${env}UnitTests", cacheName: env) {
             try {
               sh """
                 cat ci/mvn/nuxeo-test-${env}.properties \
