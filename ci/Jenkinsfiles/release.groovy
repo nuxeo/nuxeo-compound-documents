@@ -33,7 +33,7 @@ pipeline {
   environment {
     BRANCH_NAME = "${params.BRANCH}"
     BUILD_VERSION = "${params.BUILD_VERSION}"
-    JIRA_PROJECT = 'NXP'
+    JIRA_PROJECT = 'NXCON'
     JIRA_MOVING_VERSION = 'compound-2023.x'
     JIRA_RELEASED_VERSION = "compound-${VERSION}"
     VERSION = "${nxUtils.getMajorDotMinorVersion(version: env.BUILD_VERSION)}"
