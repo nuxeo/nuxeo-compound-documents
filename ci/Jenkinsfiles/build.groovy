@@ -19,6 +19,17 @@
 */
 library identifier: "platform-ci-shared-library@v0.0.75"
 
+String getWebUIVersion() {
+  dir('nuxeo-compound-documents-web') {
+    return sh(
+      returnStdout: true,
+      script: '''
+        jq --raw-output '.packages."node_modules/@nuxeo/nuxeo-web-ui-ftest".version' package-lock.json
+      '''
+    ).trim()
+  }
+}
+
 Closure buildUnitTestStage(env) {
   return {
     container('maven') {
@@ -201,13 +212,22 @@ pipeline {
             def clidSecret = env.NUXEO_VERSION.matches("^\\d+\\.\\d+(-SNAPSHOT|\\.\\d+)\$") ? 'instance-clid-preprod' : 'instance-clid'
             def clid = nxK8s.getSecretData(namespace: 'platform', name: clidSecret, key: 'instance\\.clid')
             def connectUrl = clidSecret.contains('preprod') ? CONNECT_PREPROD_SITE_URL : CONNECT_PROD_SITE_URL
+            def nuxeoWebUIVersion = getWebUIVersion()
+            def nuxeoWebUIPackage = "nuxeo-web-ui-${nuxeoWebUIVersion}"
 
             nxWithGitHubStatus(context: 'docker/build') {
               sh "mkdir -p ci/docker/target && cp ${NUXEO_COMPOUND_PACKAGE_PATH} ci/docker/target"
               def nuxeoVersion = nxMvn.getProperty(key: 'nuxeo.platform.version')
               // use withEnv for clid to not print it to the console, which nxDocker does
               withEnv(["CLID=${clid}"]) {
-                nxDocker.build(skaffoldFile: 'ci/docker/skaffold.yaml', envVars: ["CONNECT_URL=${connectUrl}", "NUXEO_VERSION=${nuxeoVersion}"])
+                nxDocker.build(
+                  skaffoldFile: 'ci/docker/skaffold.yaml',
+                  envVars: [
+                    "CONNECT_URL=${connectUrl}",
+                    "NUXEO_VERSION=${nuxeoVersion}",
+                    "NUXEO_WEB_UI_PACKAGE=${nuxeoWebUIPackage}"
+                  ]
+                )
               }
             }
             nxWithGitHubStatus(context: 'ftests') {
