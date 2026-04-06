@@ -31,7 +31,6 @@
     "karma-static": "^1.0.1",
     "lint-staged": "^10.5.1",
     "mocha": "^10.0.0",
-    "polymer-cli": "^1.9.11",
     "prettier": "2.1.2",
     "rollup": "^2.80.0",
     "rollup-plugin-copy": "^3.3.0",
@@ -59,15 +58,16 @@
       "eslint --fix"
     ]
   },
+  "overrides": {
+    "tar": "7.5.13"
+  },
   "scripts": {
     "build": "rollup -c",
-    "lint": "npm run lint:eslint && npm run lint:polymer && npm run lint:prettier",
+    "lint": "npm run lint:eslint && npm run lint:prettier",
     "lint:eslint": "eslint . --ext .js,.html",
-    "lint:polymer": "polymer lint",
     "lint:prettier": "prettier \"**/*.{js,html}\" --check || (echo '↑↑ these files are not prettier formatted ↑↑' && exit 1)",
     "format": "npm run format:prettier && npm run format:eslint",
     "format:eslint": "eslint --ext .js,.html . --fix",
-    "format:polymer": "polymer lint --fix",
     "format:prettier": "prettier \"**/*.{js,html}\" --write",
     "test": "karma start --coverage",
     "test:watch": "karma start --auto-watch=true --single-run=false",
