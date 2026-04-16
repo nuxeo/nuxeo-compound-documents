@@ -15,7 +15,7 @@
   <description>Nuxeo Compound Documents allow binding several documents as parts of one complex document.</description>
 
   <properties>
-    <frontend-plugin.node.version>v18.20.8</frontend-plugin.node.version>
+    <frontend-plugin.node.version>v20.18.1</frontend-plugin.node.version>
     <frontend-plugin.node.download.root/>
     <frontend-plugin.node.server.id/>
     <frontend-plugin.node.npm.userconfig>${env.HOME}/.npmrc</frontend-plugin.node.npm.userconfig>
