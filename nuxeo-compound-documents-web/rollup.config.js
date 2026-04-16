@@ -1,7 +1,6 @@
 import path from 'path';
 import { terser } from 'rollup-plugin-terser';
 import copy from 'rollup-plugin-copy';
-import minifyHTML from 'rollup-plugin-minify-html-literals';
 import resolve from '@rollup/plugin-node-resolve';
 
 // Replace imports by an export of existing globals in Web UI
@@ -69,6 +68,6 @@ export default {
         return code;
       },
     },
-    ...(process.env.NODE_ENV === 'production' ? [minifyHTML(), terser()] : []),
+    ...(process.env.NODE_ENV === 'production' ? [terser()] : []),
   ],
 };
