@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.operations.bad.document.detection.test" version="1.0">
+  <extension target="org.nuxeo.automation.scripting.internals.AutomationScriptingComponent" point="operation">
+    <scriptedOperation id="javascript.GetCompoundDocumentType">
+      <inputType>document</inputType>
+      <outputType>string</outputType>
+      <category>javascript</category>
+      <description>Returns the compound document type based on the given blob.</description>
+      <script>
+        function run(input) {
+          throw "compound document type detection is going wild";
+        }
+      </script>
+    </scriptedOperation>
+  </extension>
+</component>
