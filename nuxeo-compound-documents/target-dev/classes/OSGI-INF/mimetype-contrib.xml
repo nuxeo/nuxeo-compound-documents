@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.mimetypes">
+    <extension point="mimetype" target="org.nuxeo.ecm.platform.mimetype.service.MimetypeRegistryService">
+        <mimetype binary="true" iconPath="image.gif" normalized="application/vnd.adobe.indesign-idml-package">
+            <mimetypes>
+                <mimetype>application/vnd.adobe.indesign-idml-package</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>idml</extension>
+            </extensions>
+        </mimetype>
+        <mimetype normalized="image/x-icon" binary="true" iconPath="application.png">
+            <mimetypes>
+                <mimetype>image/x-icon</mimetype>
+                <mimetype>image>/vnd.microsoft.icon</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>ico</extension>
+            </extensions>
+        </mimetype>
+        <mimetype binary="false" iconPath="image.gif" normalized="application/x-indesign">
+            <mimetypes>
+                <mimetype>application/x-indesign</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>indd</extension>
+            </extensions>
+        </mimetype>
+        <mimetype binary="true" iconPath="video.png" normalized="image/vnd.adobe.premiere">
+            <mimetypes>
+                <mimetype>image/vnd.adobe.premiere</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>ppj</extension>
+                <extension>prproj</extension>
+            </extensions>
+        </mimetype>
+        <mimetype binary="true" iconPath="file.gif" normalized="model/obj">
+            <mimetypes>
+                <mimetype>model/obj</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>obj</extension>
+            </extensions>
+        </mimetype>
+        <mimetype binary="true" iconPath="file.gif" normalized="text/srt">
+            <mimetypes>
+                <mimetype>text/srt</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>srt</extension>
+            </extensions>
+        </mimetype>
+        <mimetype binary="true" iconPath="file.gif" normalized="application/x-font-opentype">
+            <mimetypes>
+                <mimetype>application/x-font-opentype</mimetype>
+            </mimetypes>
+            <extensions>
+                <extension>otf</extension>
+            </extensions>
+        </mimetype>
+    </extension>
+</component>
