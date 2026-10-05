@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/complex/"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:complex="http://www.nuxeo.org/ecm/schemas/complex/"
+           xmlns:scalar="http://www.nuxeo.org/ecm/schemas/scalar/">
+
+  <xs:import schemaLocation="_common-scalar.xsd" namespace="http://www.nuxeo.org/ecm/schemas/scalar/" />
+
+  <xs:element name="complex" type="complex:commonComplexScalar" />
+  <xs:element name="complex2" type="complex:commonComplexScalar" />
+  <xs:element name="complexes" type="complex:commonComplexList" />
+
+  <xs:complexType name="commonComplexScalar">
+    <xs:sequence>
+      <xs:element name="boolean" type="xs:boolean" />
+      <xs:element name="date" type="xs:date" />
+      <xs:element name="double" type="xs:double" />
+      <xs:element name="integer" type="xs:integer" />
+      <xs:element name="long" type="xs:long" />
+      <xs:element name="string" type="xs:string" />
+
+      <xs:element name="defaultString" type="xs:string" default="complex/defaultString default value" />
+
+      <xs:element name="doubles" type="scalar:doubleList" />
+      <xs:element name="integers" type="scalar:integerList" />
+      <xs:element name="longs" type="scalar:longList" />
+      <xs:element name="strings" type="scalar:stringList" />
+
+      <xs:element name="arrayString" type="scalar:stringArray" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="commonComplexList">
+    <xs:sequence>
+      <xs:element name="item" type="complex:commonComplexScalar" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
