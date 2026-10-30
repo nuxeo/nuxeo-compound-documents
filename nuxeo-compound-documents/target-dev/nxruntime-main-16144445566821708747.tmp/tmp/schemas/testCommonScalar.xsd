@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/scalar/"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:scalar="http://www.nuxeo.org/ecm/schemas/scalar/">
+
+  <xs:element name="boolean" type="xs:boolean" />
+  <xs:element name="date" type="xs:date" />
+  <xs:element name="double" type="xs:double" />
+  <xs:element name="float" type="xs:float" />
+  <xs:element name="integer" type="xs:integer" />
+  <xs:element name="long" type="xs:long" />
+  <xs:element name="string" type="xs:string" />
+
+  <xs:element name="defaultLong" type="xs:long" default="0" />
+  <xs:element name="defaultString" type="xs:string" default="defaultString default value" />
+
+  <xs:element name="doubles" type="scalar:doubleList" />
+  <xs:element name="integers" type="scalar:integerList" />
+  <xs:element name="longs" type="scalar:longList" />
+  <xs:element name="strings" type="scalar:stringList" />
+
+  <xs:element name="arrayDouble" type="scalar:doubleArray" />
+  <xs:element name="arrayInteger" type="scalar:integerArray" />
+  <xs:element name="arrayLong" type="scalar:longArray" />
+  <xs:element name="arrayString" type="scalar:stringArray" />
+
+  <xs:simpleType name="doubleArray">
+    <xs:list itemType="xs:double" />
+  </xs:simpleType>
+  <xs:simpleType name="integerArray">
+    <xs:list itemType="xs:integer" />
+  </xs:simpleType>
+  <xs:simpleType name="longArray">
+    <xs:list itemType="xs:long" />
+  </xs:simpleType>
+  <xs:simpleType name="stringArray">
+    <xs:list itemType="xs:string" />
+  </xs:simpleType>
+
+  <xs:complexType name="doubleList">
+    <xs:sequence>
+      <xs:element name="item" type="xs:double" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="integerList">
+    <xs:sequence>
+      <xs:element name="item" type="xs:integer" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="longList">
+    <xs:sequence>
+      <xs:element name="item" type="xs:long" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="stringList">
+    <xs:sequence>
+      <xs:element name="item" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>
