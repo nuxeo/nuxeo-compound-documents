@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.compound.documents.filemanager">
+  <extension target="org.nuxeo.ecm.platform.filemanager.service.FileManagerService" point="plugins">
+    <plugin class="org.nuxeo.compound.documents.CompoundDocumentArchiveImporter" name="CompoundDocumentArchiveImporter" order="15">
+      <filter>application/zip</filter>
+    </plugin>
+  </extension>
+</component>
