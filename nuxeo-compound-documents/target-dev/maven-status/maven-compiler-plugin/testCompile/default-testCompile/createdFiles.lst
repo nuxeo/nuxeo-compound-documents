@@ -1,0 +1,5 @@
+org/nuxeo/compound/documents/TestCompoundDocumentImporter.class
+org/nuxeo/compound/documents/TestCompoundDocumentRest.class
+org/nuxeo/compound/documents/CompoundDocumentUtils.class
+org/nuxeo/compound/documents/CompoundDocumentsFeature.class
+org/nuxeo/compound/documents/TestCompoundDocumentBreadcrumbJsonEnricher.class
